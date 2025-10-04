@@ -21,8 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.uvg.mashoras.navigation.AppScreens
-import kotlin.collections.forEachIndexed
-import kotlin.let
 
 data class NavItem(
     val icon: ImageVector, val contentDescription: String, val route: String

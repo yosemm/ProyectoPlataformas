@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.uvg.mashoras.R
 import com.uvg.mashoras.ui.theme.AppTypography
-import kotlin.ranges.coerceIn
 
 @Composable
 fun ActivitiesDashboard(
@@ -131,7 +130,7 @@ fun ProgressSection(
             ) {
 
                 val strokeWidth = 12.dp.toPx()
-                val radius = (kotlin.comparisons.minOf(size.width, size.height) - strokeWidth) / 2f
+                val radius = (minOf(size.width, size.height) - strokeWidth) / 2f
                 val center = Offset(size.width / 2f, size.height / 2f)
                 val innerSize = Size(size.width - strokeWidth, size.height - strokeWidth)
 
