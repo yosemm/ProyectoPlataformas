@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "210028775387",
+    "project_id": "mashoras-8e535",
+    "storage_bucket": "mashoras-8e535.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:210028775387:android:596689e6611a97d7dc49fe",
+        "android_client_info": {
+          "package_name": "com.uvg.mashoras"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3cv79jUP5obyA7Sb-aU2_LScW6Gujjo4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
