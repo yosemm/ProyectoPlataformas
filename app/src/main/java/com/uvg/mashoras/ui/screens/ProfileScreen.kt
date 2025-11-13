@@ -147,7 +147,7 @@ fun ProfileScreen(
 @Composable
 private fun ProfileCard(user: User?) {
     Card(
-        modifier = Modifier.fillMaxWidth(0.7f),
+        modifier = Modifier.padding(20.dp),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         shape = RoundedCornerShape(30.dp)
     ) {
@@ -206,6 +206,28 @@ private fun ProfileCard(user: User?) {
 
                     Text(
                         text = rolTexto,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.W600
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    
+                    val textCorreo = "${user?.correo}"
+                    Text(
+                        text = textCorreo,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.W600
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    
+                    val textCarrera = "${user?.carrera}"
+                    Text(
+                        text = textCarrera,
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.W600
