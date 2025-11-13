@@ -26,6 +26,21 @@ fun RegisterScreen(
             password == confirm &&
             !career.isNullOrBlank()
 
+    LaunchedEffect(loading) {
+        if (loading) {
+            val result = onRegister(email, password, career!!)
+            loading = false
+            result.fold(
+                onSuccess = {
+                    onSuccessNavigate()   // aquí ya navega al AvailableActivitiesScreen
+                },
+                onFailure = {
+                    error = it.message ?: "Error desconocido"
+                }
+            )
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -85,17 +100,6 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(if (loading) "Procesando" else "Registrarme")
-        }
-    }
-
-    if (loading) {
-        LaunchedEffect(email, password, career) {
-            val result = onRegister(email, password, career!!)
-            loading = false
-            result.fold(
-                onSuccess = { onSuccessNavigate() },
-                onFailure = { error = it.message ?: "Error desconocido" }
-            )
         }
     }
 }
