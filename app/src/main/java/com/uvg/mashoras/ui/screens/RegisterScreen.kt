@@ -46,7 +46,10 @@ fun RegisterScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmVisible by remember { mutableStateOf(false) }
 
+    val isUvgEmail = email.endsWith("@uvg.edu.gt")
+
     val canSubmit = email.isNotBlank() &&
+            isUvgEmail &&
             password.length >= 6 &&
             password == confirm &&
             !career.isNullOrBlank()
@@ -88,22 +91,38 @@ fun RegisterScreen(
         // Correo institucional
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it.trim() },
+            onValueChange = {
+                email = it.trim()
+                // Si el usuario cambia el correo, limpiamos el error general
+                error = null
+            },
             label = { Text("Correo institucional", color = Color.Gray) },
             modifier = Modifier.fillMaxWidth(0.9f),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next
             ),
-            singleLine = true
+            singleLine = true,
+            isError = showErrors && (email.isNotBlank() && !isUvgEmail)
         )
+
+        if (showErrors && email.isNotBlank() && !isUvgEmail) {
+            Text(
+                text = "Debe ser un correo institucional @uvg.edu.gt",
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp
+            )
+        }
 
         Spacer(Modifier.height(16.dp))
 
         // Contraseña
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = {
+                password = it
+                error = null
+            },
             label = { Text("Contraseña", color = Color.Gray) },
             modifier = Modifier.fillMaxWidth(0.9f),
             shape = RoundedCornerShape(8.dp),
@@ -127,7 +146,10 @@ fun RegisterScreen(
         // Confirmar contraseña
         OutlinedTextField(
             value = confirm,
-            onValueChange = { confirm = it },
+            onValueChange = {
+                confirm = it
+                error = null
+            },
             label = { Text("Confirmar contraseña", color = Color.Gray) },
             modifier = Modifier.fillMaxWidth(0.9f),
             shape = RoundedCornerShape(8.dp),
@@ -152,7 +174,10 @@ fun RegisterScreen(
         // Picker de carrera
         CareerPickerField(
             value = career,
-            onValueChange = { career = it },
+            onValueChange = {
+                career = it
+                error = null
+            },
             isError = showErrors && career.isNullOrBlank()
         )
 
@@ -179,13 +204,17 @@ fun RegisterScreen(
                     scope.launch {
                         val result = onRegister(email, password, career!!)
                         loading = false
+
+                        println("DEBUG register isSuccess=${result.isSuccess}, exception=${result.exceptionOrNull()}")
+
                         result.fold(
                             onSuccess = {
-                                // Si todo salió bien, navegamos
+                                println("DEBUG register onSuccess, navegando...")
                                 onSuccessNavigate()
                             },
                             onFailure = {
-                                error = it.message ?: "Error desconocido"
+                                it.printStackTrace()
+                                error = it.localizedMessage ?: it.message ?: "Error desconocido"
                             }
                         )
                     }

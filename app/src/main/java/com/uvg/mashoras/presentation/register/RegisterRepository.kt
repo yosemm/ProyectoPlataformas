@@ -8,15 +8,38 @@ class RegisterRepository(
     private val auth: FirebaseAuth,
     private val firestore: FirebaseFirestore
 ) {
-    suspend fun register(email: String, password: String, career: String): Result<Unit> = runCatching {
-        val authResult = auth.createUserWithEmailAndPassword(email, password).await()
-        val uid = authResult.user?.uid ?: error("Usuario inválido")
 
-        val userDoc = mapOf(
-            "email" to email,
-            "role" to "student",   // fijo temporal
-            "career" to career
-        )
-        firestore.collection("users").document(uid).set(userDoc).await()
+    suspend fun register(email: String, password: String, career: String): Result<Unit> {
+        // Validación de correo institucional
+        if (!email.endsWith("@uvg.edu.gt")) {
+            return Result.failure(
+                IllegalArgumentException("El correo debe ser institucional (@uvg.edu.gt)")
+            )
+        }
+
+        return try {
+            // 1. Crear usuario en Firebase Auth
+            val authResult = auth.createUserWithEmailAndPassword(email, password).await()
+            val uid = authResult.user?.uid
+                ?: throw IllegalStateException("No se pudo obtener el UID del usuario")
+
+            // 2. Guardar datos adicionales en Firestore
+            val data = mapOf(
+                "email" to email,
+                "career" to career
+            )
+
+            firestore.collection("users")
+                .document(uid)
+                .set(data)
+                .await()
+
+            // 3. Si TODO salió bien
+            Result.success(Unit)
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
     }
 }
