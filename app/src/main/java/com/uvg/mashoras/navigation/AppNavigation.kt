@@ -5,6 +5,9 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.uvg.mashoras.ui.register.RegisterRepository
 import com.uvg.mashoras.ui.screens.ActivitiesDashboard
 import com.uvg.mashoras.ui.screens.HistoryScreen
 import com.uvg.mashoras.ui.screens.LoginScreen
@@ -26,7 +29,21 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
             LoginScreen(navController)
         }
         composable(AppScreens.RegisterScreen.route) {
-            RegisterScreen(navController)
+            val repository = RegisterRepository(
+                FirebaseAuth.getInstance(),
+                FirebaseFirestore.getInstance()
+            )
+            
+            RegisterScreen(
+                onRegister = { email, password, career ->
+                    repository.register(email, password, career)
+                },
+                onSuccessNavigate = {
+                    navController.navigate(AppScreens.AvailableActivitiesScreen.route) {
+                        popUpTo(AppScreens.WelcomeScreen.route) { inclusive = true }
+                    }
+                }
+            )
         }
         composable(AppScreens.AvailableActivitiesScreen.route) {
             ActivitiesDashboard()

@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.uvg.mashoras.ui.components.ProgressSection
 
 @Composable
 fun HistoryScreen(
@@ -153,25 +154,32 @@ private fun CompletedActivityCard(
 }
 
 data class CompletedActivity(
-    val title: String, val completedDate: String, val hoursEarned: Int
+    val title: String, 
+    val completedDate: String, 
+    val hoursEarned: Int
 )
 
 private fun getDefaultCompletedActivities(): List<CompletedActivity> {
     return listOf(
         CompletedActivity(
-            title = "Tour por la universidad", completedDate = "12/10/25", hoursEarned = 1
-        ), CompletedActivity(
-            title = "Publicación en blog", completedDate = "13/10/25", hoursEarned = 2
-        ), CompletedActivity(
-            title = "Evento de networking", completedDate = "11/10/25", hoursEarned = 3
-        ), CompletedActivity(
-            title = "Workshop de desarrollo", completedDate = "10/10/25", hoursEarned = 4
-        ), CompletedActivity(
-            title = "Workshop de desarrollo", completedDate = "10/10/25", hoursEarned = 4
-        ), CompletedActivity(
-            title = "Workshop de desarrollo", completedDate = "10/10/25", hoursEarned = 4
-        ), CompletedActivity(
-            title = "Workshop de desarrollo", completedDate = "10/10/25", hoursEarned = 4
+            title = "Tour por la universidad", 
+            completedDate = "12/10/25", 
+            hoursEarned = 1
+        ), 
+        CompletedActivity(
+            title = "Publicación en blog", 
+            completedDate = "13/10/25", 
+            hoursEarned = 2
+        ), 
+        CompletedActivity(
+            title = "Evento de networking", 
+            completedDate = "11/10/25", 
+            hoursEarned = 3
+        ), 
+        CompletedActivity(
+            title = "Workshop de desarrollo", 
+            completedDate = "10/10/25", 
+            hoursEarned = 4
         )
     )
 }

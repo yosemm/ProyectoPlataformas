@@ -36,21 +36,31 @@ fun MainScreen() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
-        CenteredTopBar()
-    }, bottomBar = {
-        if (currentRoute in listOf(
+    Scaffold(
+        modifier = Modifier.fillMaxSize(), 
+        topBar = {
+            // Solo mostrar TopBar en las pantallas principales
+            if (currentRoute in listOf(
                 AppScreens.AvailableActivitiesScreen.route,
                 AppScreens.HistoryScreen.route,
                 AppScreens.ProfileScreen.route
-            )
-        ) {
-            BottomNavBar(navController)
+            )) {
+                CenteredTopBar()
+            }
+        }, 
+        bottomBar = {
+            if (currentRoute in listOf(
+                AppScreens.AvailableActivitiesScreen.route,
+                AppScreens.HistoryScreen.route,
+                AppScreens.ProfileScreen.route
+            )) {
+                BottomNavBar(navController)
+            }
         }
-    }) { innerPadding ->
+    ) { innerPadding ->
         AppNavigation(
             navController = navController,
-            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
+            modifier = Modifier.padding(innerPadding)
         )
     }
 }

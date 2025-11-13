@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.uvg.mashoras.navigation.AppScreens
+import com.uvg.mashoras.ui.components.ProgressSection
 
 @Composable
 fun ProfileScreen(
@@ -201,4 +202,3 @@ private fun LogoutCard(onLogoutClicked: () -> Unit) {
         }
     }
 }
-
