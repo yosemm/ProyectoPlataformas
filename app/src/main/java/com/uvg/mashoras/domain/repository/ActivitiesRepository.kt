@@ -1,18 +1,14 @@
 package com.uvg.mashoras.domain.repository
 
-import com.uvg.mashoras.domain.model.ActivityItem
+import com.uvg.mashoras.data.models.Activity
 import kotlinx.coroutines.flow.Flow
 
 interface ActivitiesRepository {
-    /** Flujo de actividades desde Room (cache local). */
-    fun observeActivities(): Flow<List<ActivityItem>>
-
-    /** Sincroniza cache local con Firestore. */
+    fun observeActivities(): Flow<List<Activity>>
     suspend fun refreshActivities()
-
-    /** Alta remota + refresco local. */
-    suspend fun addActivity(title: String, description: String, hours: Int, ownerEmail: String)
-
-    /** Baja remota + refresco local. */
-    suspend fun deleteActivity(id: String)
+    suspend fun createActivity(activity: Activity, creatorId: String)
+    suspend fun enrollStudent(activityId: String, userId: String)
+    suspend fun unenrollStudent(activityId: String, userId: String)
+    suspend fun markActivityAsCompleted(activityId: String)
+    suspend fun deleteActivity(activityId: String)
 }
