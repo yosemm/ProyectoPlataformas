@@ -76,69 +76,72 @@ fun ProfileScreen(
     val progressPercentage = (progress * 100).toInt()
 
     LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        item { Spacer(modifier = Modifier.height(19.dp)) }
+    modifier = modifier
+        .fillMaxSize()
+        .padding(16.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+    horizontalAlignment = Alignment.CenterHorizontally
+) {
+    item { Spacer(modifier = Modifier.height(19.dp)) }
 
+    // 👇 Solo mostramos el progreso si es ESTUDIANTE y tiene meta > 0
+    if (user?.rol == UserRole.ESTUDIANTE && goalHoursRaw > 0) {
         item {
             ProgressSection(
                 progress = progress,
                 progressPercentage = progressPercentage,
                 currentHours = currentHours,
-                goalHours = if (goalHoursRaw > 0) goalHoursRaw else 0
+                goalHours = goalHoursRaw
             )
         }
+    }
 
+    item {
+        Text(
+            text = "Perfil",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = colorScheme.onBackground
+        )
+    }
+
+    item {
+        ProfileCard(user = user)
+    }
+
+    if (user?.rol == UserRole.ESTUDIANTE) {
+        item {
+            GoalForm(
+                currentMeta = user.meta,
+                onSaveMeta = { meta -> viewModel.updateMeta(meta) }
+            )
+        }
+    }
+
+    item {
+        LogoutCard(
+            onLogoutClicked = {
+                FirebaseAuth.getInstance().signOut()
+                navController.navigate(AppScreens.WelcomeScreen.route) {
+                    popUpTo(navController.graph.id) { inclusive = true }
+                }
+            }
+        )
+    }
+
+    if (state.error != null) {
         item {
             Text(
-                text = "Perfil",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = colorScheme.onBackground
+                text = state.error ?: "",
+                color = Color.Red,
+                fontSize = 14.sp
             )
         }
-
-        item {
-            ProfileCard(user = user)
-        }
-
-        // Mini formulario SOLO para estudiantes
-        if (user?.rol == UserRole.ESTUDIANTE) {
-            item {
-                GoalForm(
-                    currentMeta = user.meta,
-                    onSaveMeta = { meta -> viewModel.updateMeta(meta) }
-                )
-            }
-        }
-
-        item {
-            LogoutCard(
-                onLogoutClicked = {
-                    FirebaseAuth.getInstance().signOut()
-                    navController.navigate(AppScreens.WelcomeScreen.route) {
-                        popUpTo(navController.graph.id) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        if (state.error != null) {
-            item {
-                Text(
-                    text = state.error ?: "",
-                    color = Color.Red,
-                    fontSize = 14.sp
-                )
-            }
-        }
-
-        item { Spacer(modifier = Modifier.height(32.dp)) }
     }
+
+    item { Spacer(modifier = Modifier.height(32.dp)) }
+}
+
 }
 
 @Composable
