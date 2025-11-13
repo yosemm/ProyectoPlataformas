@@ -8,9 +8,15 @@ import kotlinx.coroutines.withContext
 class RegisterViewModel(
     private val repository: RegisterRepository
 ) : ViewModel() {
-    suspend fun register(email: String, password: String, career: String): Result<Unit> {
+    suspend fun register(
+        email: String, 
+        password: String, 
+        nombre: String,
+        apellido: String,
+        career: String
+    ): Result<Unit> {
         return withContext(Dispatchers.IO) {
-            repository.register(email, password, career)
+            repository.register(email, password, nombre, apellido, career)
         }
     }
 }

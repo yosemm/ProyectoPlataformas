@@ -2,6 +2,7 @@ package com.uvg.mashoras.ui.register
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.uvg.mashoras.utils.EmailValidator
 import kotlinx.coroutines.tasks.await
 
 class RegisterRepository(
@@ -9,11 +10,24 @@ class RegisterRepository(
     private val firestore: FirebaseFirestore
 ) {
 
-    suspend fun register(email: String, password: String, career: String): Result<Unit> {
+    suspend fun register(
+        email: String, 
+        password: String, 
+        nombre: String,
+        apellido: String,
+        career: String
+    ): Result<Unit> {
         // Validación de correo institucional
-        if (!email.endsWith("@uvg.edu.gt")) {
+        if (!EmailValidator.isUvgEmail(email)) {
             return Result.failure(
                 IllegalArgumentException("El correo debe ser institucional (@uvg.edu.gt)")
+            )
+        }
+
+        // Validación de campos requeridos
+        if (nombre.isBlank() || apellido.isBlank()) {
+            return Result.failure(
+                IllegalArgumentException("El nombre y apellido son requeridos")
             )
         }
 
@@ -23,10 +37,20 @@ class RegisterRepository(
             val uid = authResult.user?.uid
                 ?: throw IllegalStateException("No se pudo obtener el UID del usuario")
 
-            // 2. Guardar datos adicionales en Firestore
-            val data = mapOf(
-                "email" to email,
-                "career" to career
+            // 2. Determinar el rol basándose en el correo
+            val rol = EmailValidator.determineUserRole(email)
+
+            // 3. Guardar datos adicionales en Firestore
+            val data = hashMapOf(
+                "uid" to uid,
+                "nombre" to nombre,
+                "apellido" to apellido,
+                "correo" to email,
+                "meta" to 0,
+                "avance" to 0,
+                "rol" to rol.name, // "ESTUDIANTE" o "MAESTRO"
+                "carrera" to career,
+                "actividadesRealizadas" to emptyList<String>() // Inicialmente vacío
             )
 
             firestore.collection("users")
@@ -34,7 +58,7 @@ class RegisterRepository(
                 .set(data)
                 .await()
 
-            // 3. Si TODO salió bien
+            // 4. Si TODO salió bien
             Result.success(Unit)
 
         } catch (e: Exception) {

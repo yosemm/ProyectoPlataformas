@@ -35,8 +35,8 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
             )
             
             RegisterScreen(
-                onRegister = { email, password, career ->
-                    repository.register(email, password, career)
+                onRegister = { email, password, nombre, apellido, career ->
+                    repository.register(email, password, nombre, apellido, career)
                 },
                 onSuccessNavigate = {
                     print("entra aca1")

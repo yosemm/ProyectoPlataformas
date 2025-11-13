@@ -2,9 +2,11 @@ package com.uvg.mashoras.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
@@ -22,15 +24,18 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.uvg.mashoras.ui.register.CareerPickerField
+import com.uvg.mashoras.utils.EmailValidator
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 
 @Composable
 fun RegisterScreen(
-    onRegister: suspend (email: String, password: String, career: String) -> Result<Unit>,
+    onRegister: suspend (email: String, password: String, nombre: String, apellido: String, career: String) -> Result<Unit>,
     onSuccessNavigate: () -> Unit,
     onBack: () -> Unit,
 ) {
+    var nombre by remember { mutableStateOf("") }
+    var apellido by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf("") }
@@ -46,9 +51,11 @@ fun RegisterScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmVisible by remember { mutableStateOf(false) }
 
-    val isUvgEmail = email.endsWith("@uvg.edu.gt")
+    val isUvgEmail = EmailValidator.isUvgEmail(email)
 
-    val canSubmit = email.isNotBlank() &&
+    val canSubmit = nombre.isNotBlank() &&
+            apellido.isNotBlank() &&
+            email.isNotBlank() &&
             isUvgEmail &&
             password.length >= 6 &&
             password == confirm &&
@@ -56,11 +63,15 @@ fun RegisterScreen(
 
     // Scope para lanzar corrutinas desde el botón
     val scope = rememberCoroutineScope()
+    
+    // ScrollState para hacer la pantalla scrolleable
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
+            .verticalScroll(scrollState)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -88,29 +99,102 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(22.dp))
 
+        // Campo Nombre
+        OutlinedTextField(
+            value = nombre,
+            onValueChange = {
+                nombre = it.trim()
+                error = null
+            },
+            label = { Text("Nombre", color = Color.Gray) },
+            modifier = Modifier.fillMaxWidth(0.9f),
+            shape = RoundedCornerShape(8.dp),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
+            singleLine = true,
+            isError = showErrors && nombre.isBlank()
+        )
+
+        if (showErrors && nombre.isBlank()) {
+            Text(
+                text = "El nombre es requerido",
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier.fillMaxWidth(0.9f).padding(start = 16.dp, top = 4.dp)
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Campo Apellido
+        OutlinedTextField(
+            value = apellido,
+            onValueChange = {
+                apellido = it.trim()
+                error = null
+            },
+            label = { Text("Apellido", color = Color.Gray) },
+            modifier = Modifier.fillMaxWidth(0.9f),
+            shape = RoundedCornerShape(8.dp),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
+            singleLine = true,
+            isError = showErrors && apellido.isBlank()
+        )
+
+        if (showErrors && apellido.isBlank()) {
+            Text(
+                text = "El apellido es requerido",
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier.fillMaxWidth(0.9f).padding(start = 16.dp, top = 4.dp)
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
         // Correo institucional
         OutlinedTextField(
             value = email,
             onValueChange = {
                 email = it.trim()
-                // Si el usuario cambia el correo, limpiamos el error general
                 error = null
             },
             label = { Text("Correo institucional", color = Color.Gray) },
             modifier = Modifier.fillMaxWidth(0.9f),
+            shape = RoundedCornerShape(8.dp),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next
             ),
             singleLine = true,
-            isError = showErrors && (email.isNotBlank() && !isUvgEmail)
+            isError = showErrors && (email.isNotBlank() && !isUvgEmail),
+            supportingText = {
+                if (email.isNotBlank() && isUvgEmail) {
+                    val rol = if (EmailValidator.isStudentEmail(email)) {
+                        "Estudiante"
+                    } else {
+                        "Maestro"
+                    }
+                    Text(
+                        text = "Registrándose como: $rol",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 12.sp
+                    )
+                }
+            }
         )
 
         if (showErrors && email.isNotBlank() && !isUvgEmail) {
             Text(
                 text = "Debe ser un correo institucional @uvg.edu.gt",
                 color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp
+                fontSize = 12.sp,
+                modifier = Modifier.fillMaxWidth(0.9f).padding(start = 16.dp, top = 4.dp)
             )
         }
 
@@ -138,7 +222,17 @@ fun RegisterScreen(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Next
             ),
-            singleLine = true
+            singleLine = true,
+            isError = showErrors && password.length < 6,
+            supportingText = {
+                if (showErrors && password.length < 6 && password.isNotEmpty()) {
+                    Text(
+                        text = "Mínimo 6 caracteres",
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp
+                    )
+                }
+            }
         )
 
         Spacer(Modifier.height(16.dp))
@@ -169,6 +263,15 @@ fun RegisterScreen(
             isError = showErrors && confirm.isNotEmpty() && confirm != password
         )
 
+        if (showErrors && confirm.isNotEmpty() && confirm != password) {
+            Text(
+                text = "Las contraseñas no coinciden",
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier.fillMaxWidth(0.9f).padding(start = 16.dp, top = 4.dp)
+            )
+        }
+
         Spacer(Modifier.height(16.dp))
 
         // Picker de carrera
@@ -185,11 +288,18 @@ fun RegisterScreen(
 
         // Mensaje de error (registro)
         if (error != null) {
-            Text(
-                text = error!!,
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 14.sp
-            )
+            Surface(
+                modifier = Modifier.fillMaxWidth(0.9f),
+                color = MaterialTheme.colorScheme.errorContainer,
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = error!!,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
             Spacer(Modifier.height(8.dp))
         }
 
@@ -202,7 +312,7 @@ fun RegisterScreen(
                 if (canSubmit && !loading) {
                     loading = true
                     scope.launch {
-                        val result = onRegister(email, password, career!!)
+                        val result = onRegister(email, password, nombre, apellido, career!!)
                         loading = false
 
                         println("DEBUG register isSuccess=${result.isSuccess}, exception=${result.exceptionOrNull()}")
@@ -255,5 +365,7 @@ fun RegisterScreen(
                 color = MaterialTheme.colorScheme.primary
             )
         }
+        
+        Spacer(Modifier.height(24.dp))
     }
 }
