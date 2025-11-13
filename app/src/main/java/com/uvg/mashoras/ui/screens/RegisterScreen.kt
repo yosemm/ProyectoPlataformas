@@ -22,12 +22,14 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.uvg.mashoras.ui.register.CareerPickerField
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 @Composable
 fun RegisterScreen(
     onRegister: suspend (email: String, password: String, career: String) -> Result<Unit>,
     onSuccessNavigate: () -> Unit,
-    onBack: () -> Unit,                  // <-- nuevo parámetro para el botón "Regresar"
+    onBack: () -> Unit,
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -37,7 +39,7 @@ fun RegisterScreen(
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    // Para controlar cuándo mostrar errores visuales
+    // Para mostrar errores visuales solo después de intentar registrar
     var showErrors by remember { mutableStateOf(false) }
 
     // Visibilidad de contraseñas
@@ -49,20 +51,8 @@ fun RegisterScreen(
             password == confirm &&
             !career.isNullOrBlank()
 
-    LaunchedEffect(loading) {
-        if (loading) {
-            val result = onRegister(email, password, career!!)
-            loading = false
-            result.fold(
-                onSuccess = {
-                    onSuccessNavigate()
-                },
-                onFailure = {
-                    error = it.message ?: "Error desconocido"
-                }
-            )
-        }
-    }
+    // Scope para lanzar corrutinas desde el botón
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -95,6 +85,7 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(22.dp))
 
+        // Correo institucional
         OutlinedTextField(
             value = email,
             onValueChange = { email = it.trim() },
@@ -109,6 +100,7 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(16.dp))
 
+        // Contraseña
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -132,6 +124,7 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(16.dp))
 
+        // Confirmar contraseña
         OutlinedTextField(
             value = confirm,
             onValueChange = { confirm = it },
@@ -156,14 +149,16 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(16.dp))
 
+        // Picker de carrera
         CareerPickerField(
             value = career,
             onValueChange = { career = it },
-            isError = showErrors && career.isNullOrBlank()   // <-- ya no sale rojo al inicio
+            isError = showErrors && career.isNullOrBlank()
         )
 
         Spacer(Modifier.height(16.dp))
 
+        // Mensaje de error (registro)
         if (error != null) {
             Text(
                 text = error!!,
@@ -177,12 +172,26 @@ fun RegisterScreen(
         Button(
             onClick = {
                 error = null
-                showErrors = true          // empezamos a mostrar errores de campos
+                showErrors = true
+
                 if (canSubmit && !loading) {
                     loading = true
+                    scope.launch {
+                        val result = onRegister(email, password, career!!)
+                        loading = false
+                        result.fold(
+                            onSuccess = {
+                                // Si todo salió bien, navegamos
+                                onSuccessNavigate()
+                            },
+                            onFailure = {
+                                error = it.message ?: "Error desconocido"
+                            }
+                        )
+                    }
                 }
             },
-            enabled = !loading,            // se deshabilita solo mientras carga
+            enabled = canSubmit && !loading,
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .height(50.dp),
@@ -201,7 +210,7 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Botón "Regresar" igual que en LoginScreen
+        // Botón "Regresar"
         OutlinedButton(
             onClick = onBack,
             modifier = Modifier

@@ -39,8 +39,11 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
                     repository.register(email, password, career)
                 },
                 onSuccessNavigate = {
+                    print("entra aca1")
                     navController.navigate(AppScreens.AvailableActivitiesScreen.route) {
+                        print("entra aca2")
                         popUpTo(AppScreens.WelcomeScreen.route) { inclusive = true }
+                        print("entra aca3")
                     }
                 },
                 onBack = { navController.popBackStack() }
