@@ -82,7 +82,7 @@ fun ProfileScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        item { Spacer(modifier = Modifier.height(120.dp)) }
+        item { Spacer(modifier = Modifier.height(19.dp)) }
 
         item {
             ProgressSection(

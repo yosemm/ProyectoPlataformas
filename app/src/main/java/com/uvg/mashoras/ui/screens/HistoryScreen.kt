@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -22,52 +23,44 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.uvg.mashoras.ui.components.ProgressSection
+import com.uvg.mashoras.ui.components.StudentProgressHeader
 
 @Composable
 fun HistoryScreen(
     modifier: Modifier = Modifier,
-    currentHours: Int = 75,
-    goalHours: Int = 100,
     completedActivities: List<CompletedActivity> = getDefaultCompletedActivities()
 ) {
-    val progress = (currentHours.toFloat() / goalHours.toFloat()).coerceIn(0f, 1f)
-    val progressPercentage = (progress * 100).toInt()
-
     LazyColumn(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
-            Spacer(modifier = Modifier.height(120.dp))
+            Spacer(modifier = Modifier.height(19.dp))
         }
 
+        // Header de progreso (solo estudiante, se encarga StudentProgressHeader)
         item {
-            ProgressSection(
-                progress = progress,
-                progressPercentage = progressPercentage,
-                currentHours = currentHours,
-                goalHours = goalHours
-            )
+            StudentProgressHeader()
         }
 
         item {
             Text(
-                text = "Historial",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.W900,
-                color = Color.Black,
-                modifier = Modifier.padding(vertical = 12.dp)
+                text = "Historial de actividades",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = colorScheme.onBackground
             )
         }
 
-        items(completedActivities.size) { index ->
-            CompletedActivityCard(
-                activity = completedActivities[index]
-            )
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        items(completedActivities) { activity ->
+            CompletedActivityCard(activity = activity)
         }
 
         item {
@@ -76,10 +69,14 @@ fun HistoryScreen(
     }
 }
 
+data class CompletedActivity(
+    val title: String,
+    val completedDate: String,
+    val hoursEarned: Int
+)
+
 @Composable
-private fun CompletedActivityCard(
-    activity: CompletedActivity
-) {
+fun CompletedActivityCard(activity: CompletedActivity) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -98,54 +95,45 @@ private fun CompletedActivityCard(
                     text = activity.title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.W900,
-                    color = colorScheme.primary,
-                    lineHeight = 17.sp
+                    color = Color.Black,
+                    modifier = Modifier.padding(vertical = 12.dp)
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF4CAF50)),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Text(
-                        text = "Completada",
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.W900,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 0.dp)
-                    )
-                }
+                Text(
+                    text = "Fecha: ${activity.completedDate}",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.W500,
+                    color = Color.DarkGray,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Card(
-                modifier = Modifier.weight(0.9f),
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .width(70.dp),
                 colors = CardDefaults.cardColors(containerColor = colorScheme.primary),
-                shape = RoundedCornerShape(26.dp),
+                shape = RoundedCornerShape(20.dp)
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                        .padding(vertical = 10.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Finalizada: ${activity.completedDate}",
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.W900
+                        text = "+${activity.hoursEarned}",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
                     Text(
-                        text = "Horas conseguidas: ${activity.hoursEarned}",
-                        color = Color.White,
+                        text = "horas",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.W900
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White
                     )
                 }
             }
@@ -153,32 +141,26 @@ private fun CompletedActivityCard(
     }
 }
 
-data class CompletedActivity(
-    val title: String, 
-    val completedDate: String, 
-    val hoursEarned: Int
-)
-
-private fun getDefaultCompletedActivities(): List<CompletedActivity> {
+fun getDefaultCompletedActivities(): List<CompletedActivity> {
     return listOf(
         CompletedActivity(
-            title = "Tour por la universidad", 
-            completedDate = "12/10/25", 
-            hoursEarned = 1
-        ), 
+            title = "Taller de liderazgo",
+            completedDate = "12/10/25",
+            hoursEarned = 4
+        ),
         CompletedActivity(
-            title = "Publicación en blog", 
-            completedDate = "13/10/25", 
+            title = "Voluntariado comunitario",
+            completedDate = "13/10/25",
             hoursEarned = 2
-        ), 
+        ),
         CompletedActivity(
-            title = "Evento de networking", 
-            completedDate = "11/10/25", 
+            title = "Evento de networking",
+            completedDate = "11/10/25",
             hoursEarned = 3
-        ), 
+        ),
         CompletedActivity(
-            title = "Workshop de desarrollo", 
-            completedDate = "10/10/25", 
+            title = "Workshop de desarrollo",
+            completedDate = "10/10/25",
             hoursEarned = 4
         )
     )
