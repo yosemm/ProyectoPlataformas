@@ -46,7 +46,7 @@ fun LoginScreen(navController: NavController, modifier: Modifier = Modifier) {
         modifier = Modifier.fillMaxSize().background(Color.White).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(170.dp))
+        Spacer(Modifier.height(60.dp))
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(0.9f)) {
             Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(38.dp))
             Spacer(Modifier.width(12.dp))

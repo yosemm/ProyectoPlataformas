@@ -71,7 +71,7 @@ fun RegisterScreen(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(170.dp))
+        Spacer(Modifier.height(60.dp))
 
         // Título al estilo LoginScreen
         Row(
@@ -159,7 +159,6 @@ fun RegisterScreen(
         CareerPickerField(
             value = career,
             onValueChange = { career = it },
-            supportingText = "Pulsa para elegir. Lista desplazable.",
             isError = showErrors && career.isNullOrBlank()   // <-- ya no sale rojo al inicio
         )
 

@@ -43,7 +43,12 @@ fun MainScreen() {
             if (currentRoute in listOf(
                 AppScreens.AvailableActivitiesScreen.route,
                 AppScreens.HistoryScreen.route,
-                AppScreens.ProfileScreen.route
+                AppScreens.ProfileScreen.route,
+                AppScreens.WelcomeScreen.route,
+                AppScreens.LoginScreen.route,
+                AppScreens.RegisterScreen.route,
+
+
             )) {
                 CenteredTopBar()
             }
