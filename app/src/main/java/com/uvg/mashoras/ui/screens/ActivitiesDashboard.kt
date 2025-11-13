@@ -1,5 +1,6 @@
 package com.uvg.mashoras.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,6 +27,7 @@ import com.uvg.mashoras.presentation.activities.ActivitiesViewModel
 import com.uvg.mashoras.presentation.activities.ActivitiesViewModelFactory
 import com.uvg.mashoras.presentation.profile.ProfileViewModel
 import com.uvg.mashoras.presentation.profile.ProfileViewModelFactory
+import com.uvg.mashoras.ui.components.ActivityDetailDialog
 import com.uvg.mashoras.ui.components.AddActivityDialog
 import com.uvg.mashoras.ui.components.StudentProgressHeader
 import java.text.SimpleDateFormat
@@ -64,6 +66,8 @@ fun ActivitiesDashboard() {
     }
 
     var showAddActivityDialog by remember { mutableStateOf(false) }
+    var showEditActivityDialog by remember { mutableStateOf(false) }
+    var selectedActivity by remember { mutableStateOf<Activity?>(null) }
     val currentUserUid = FirebaseAuth.getInstance().currentUser?.uid
 
     // Manejar el éxito de la creación de actividad
@@ -88,23 +92,44 @@ fun ActivitiesDashboard() {
                 activities = state.activities,
                 userRole = state.userRole,
                 currentUserUid = currentUserUid,
-                onEnroll = { activityId ->
-                    activitiesViewModel.enrollInActivity(activityId)
-                },
-                onUnenroll = { activityId ->
-                    activitiesViewModel.unenrollFromActivity(activityId)
-                },
-                onMarkCompleted = { activityId ->
-                    activitiesViewModel.markActivityAsCompleted(activityId)
-                },
-                onDelete = { activityId ->
-                    activitiesViewModel.deleteActivity(activityId)
+                onActivityClick = { activity ->
+                    selectedActivity = activity
                 },
                 onAddActivityClick = {
                     showAddActivityDialog = true
                 }
             )
         }
+    }
+
+    // Modal de detalles de actividad
+    selectedActivity?.let { activity ->
+        val state = activitiesState as? ActivitiesUiState.Success
+        val userRole = state?.userRole ?: UserRole.ESTUDIANTE
+        val isEnrolled = currentUserUid?.let { activity.estudiantesInscritos.contains(it) } ?: false
+
+        ActivityDetailDialog(
+            activity = activity,
+            userRole = userRole,
+            currentUserUid = currentUserUid,
+            isEnrolled = isEnrolled,
+            onDismiss = { selectedActivity = null },
+            onEnroll = {
+                activitiesViewModel.enrollInActivity(activity.id)
+            },
+            onUnenroll = {
+                activitiesViewModel.unenrollFromActivity(activity.id)
+            },
+            onMarkCompleted = {
+                activitiesViewModel.markActivityAsCompleted(activity.id)
+            },
+            onDelete = {
+                activitiesViewModel.deleteActivity(activity.id)
+            },
+            onEdit = {
+                showEditActivityDialog = true
+            }
+        )
     }
 
     // Modal de agregar actividad
@@ -141,6 +166,13 @@ fun ActivitiesDashboard() {
             )
         }
     }
+
+    // Modal de editar actividad (reutilizamos AddActivityDialog pero con datos precargados)
+    if (showEditActivityDialog && selectedActivity != null) {
+        // TODO: Implementar EditActivityDialog similar a AddActivityDialog
+        // Por ahora cerramos el modal
+        showEditActivityDialog = false
+    }
 }
 
 @Composable
@@ -174,10 +206,7 @@ private fun SuccessState(
     activities: List<Activity>,
     userRole: UserRole,
     currentUserUid: String?,
-    onEnroll: (String) -> Unit,
-    onUnenroll: (String) -> Unit,
-    onMarkCompleted: (String) -> Unit,
-    onDelete: (String) -> Unit,
+    onActivityClick: (Activity) -> Unit,
     onAddActivityClick: () -> Unit
 ) {
     Scaffold(
@@ -229,7 +258,16 @@ private fun SuccessState(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            if (activities.isEmpty()) {
+            // Filtrar actividades según el rol
+            val filteredActivities = if (userRole == UserRole.MAESTRO) {
+                // Maestros ven todas las actividades activas
+                activities.filter { !it.finalizado }
+            } else {
+                // Estudiantes ven solo actividades activas
+                activities.filter { !it.finalizado }
+            }
+
+            if (filteredActivities.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -248,15 +286,12 @@ private fun SuccessState(
                     }
                 }
             } else {
-                items(activities) { activity ->
+                items(filteredActivities) { activity ->
                     ActivityCard(
                         activity = activity,
                         userRole = userRole,
                         currentUserUid = currentUserUid,
-                        onEnroll = { onEnroll(activity.id) },
-                        onUnenroll = { onUnenroll(activity.id) },
-                        onMarkCompleted = { onMarkCompleted(activity.id) },
-                        onDelete = { onDelete(activity.id) }
+                        onClick = { onActivityClick(activity) }
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
@@ -274,17 +309,16 @@ private fun ActivityCard(
     activity: Activity,
     userRole: UserRole,
     currentUserUid: String?,
-    onEnroll: () -> Unit,
-    onUnenroll: () -> Unit,
-    onMarkCompleted: () -> Unit,
-    onDelete: () -> Unit
+    onClick: () -> Unit
 ) {
     val isEnrolled = currentUserUid?.let { activity.estudiantesInscritos.contains(it) } ?: false
     val isFull = activity.estudiantesInscritos.size >= activity.cupos
     val isCreator = currentUserUid == activity.creadoPor
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(4.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -328,14 +362,26 @@ private fun ActivityCard(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
+                } else if (isFull) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.error,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "Llena",
+                            fontSize = 12.sp,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
 
             Spacer(Modifier.height(8.dp))
 
-            // Descripción
+            // Descripción (truncada)
             Text(
-                text = activity.descripcion,
+                text = activity.descripcion.take(100) + if (activity.descripcion.length > 100) "..." else "",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Gray
             )
@@ -372,55 +418,19 @@ private fun ActivityCard(
                 }
             }
 
-            // Botones de acción
-            if (!activity.finalizado) {
-                Spacer(Modifier.height(12.dp))
-                
-                if (userRole == UserRole.ESTUDIANTE) {
-                    // Botones para estudiantes
-                    if (isEnrolled) {
-                        OutlinedButton(
-                            onClick = onUnenroll,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Desinscribirse")
-                        }
-                    } else if (!isFull) {
-                        Button(
-                            onClick = onEnroll,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Inscribirse")
-                        }
-                    } else {
-                        Button(
-                            onClick = {},
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = false
-                        ) {
-                            Text("Sin cupos disponibles")
-                        }
-                    }
-                } else if (userRole == UserRole.MAESTRO && isCreator) {
-                    // Botones para maestros creadores
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = onDelete,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Eliminar")
-                        }
-                        
-                        Button(
-                            onClick = onMarkCompleted,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Finalizar")
-                        }
-                    }
+            if (userRole == UserRole.MAESTRO && isCreator) {
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "Creada por ti",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
                 }
             }
         }

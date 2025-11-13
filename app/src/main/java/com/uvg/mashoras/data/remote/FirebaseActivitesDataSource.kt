@@ -8,6 +8,7 @@ import com.uvg.mashoras.data.models.Activity
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 
 class FirebaseActivitiesDataSource(
     private val firestore: FirebaseFirestore
@@ -54,29 +55,56 @@ class FirebaseActivitiesDataSource(
             "creadoPor" to creatorId
         )
 
-        docRef.set(data)
+        docRef.set(data).await()
     }
 
     // === INSCRIBIR / DESINSCRIBIR ===
     suspend fun enrollStudent(activityId: String, userId: String) {
         val docRef = activitiesCollection.document(activityId)
-        docRef.update("estudiantesInscritos", FieldValue.arrayUnion(userId))
+        docRef.update("estudiantesInscritos", FieldValue.arrayUnion(userId)).await()
     }
 
     suspend fun unenrollStudent(activityId: String, userId: String) {
         val docRef = activitiesCollection.document(activityId)
-        docRef.update("estudiantesInscritos", FieldValue.arrayRemove(userId))
+        docRef.update("estudiantesInscritos", FieldValue.arrayRemove(userId)).await()
     }
 
     // === FINALIZAR Y ELIMINAR ===
     suspend fun markActivityAsCompleted(activityId: String) {
         val docRef = activitiesCollection.document(activityId)
-        docRef.update("finalizado", true)
+        
+        // Obtener la actividad para actualizar las horas de los estudiantes
+        val activityDoc = docRef.get().await()
+        val activity = activityDoc.toActivity()
+        
+        if (activity != null) {
+            // Actualizar las horas de cada estudiante inscrito
+            val studentsEnrolled = activity.estudiantesInscritos
+            val hoursToAdd = activity.horasARealizar
+            
+            studentsEnrolled.forEach { studentId ->
+                updateStudentHours(studentId, hoursToAdd, activityId)
+            }
+            
+            // Marcar la actividad como finalizada
+            docRef.update("finalizado", true).await()
+        }
     }
 
     suspend fun deleteActivity(activityId: String) {
         val docRef = activitiesCollection.document(activityId)
-        docRef.delete()
+        docRef.delete().await()
+    }
+
+    // === ACTUALIZAR HORAS DE ESTUDIANTES ===
+    private suspend fun updateStudentHours(userId: String, hoursToAdd: Int, activityId: String) {
+        val userRef = firestore.collection("users").document(userId)
+        
+        // Incrementar las horas de avance
+        userRef.update("avance", FieldValue.increment(hoursToAdd.toLong())).await()
+        
+        // Agregar el ID de la actividad al array de actividades realizadas
+        userRef.update("actividadesRealizadas", FieldValue.arrayUnion(activityId)).await()
     }
 
     // === MAPEO DE DOCUMENTO A MODELO ===
