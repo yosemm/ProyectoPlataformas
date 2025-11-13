@@ -42,7 +42,8 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
                     navController.navigate(AppScreens.AvailableActivitiesScreen.route) {
                         popUpTo(AppScreens.WelcomeScreen.route) { inclusive = true }
                     }
-                }
+                },
+                onBack = { navController.popBackStack() }
             )
         }
         composable(AppScreens.AvailableActivitiesScreen.route) {
