@@ -20,6 +20,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.google.firebase.Timestamp
 import com.uvg.mashoras.ui.register.CareerPickerField
+import com.uvg.mashoras.ui.register.Careers
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -177,7 +178,7 @@ fun AddActivityDialog(
                         singleLine = true
                     )
 
-                    // Carrera
+                    // Carrera - AQUÍ USAMOS LA LISTA COMPLETA (con "Todas")
                     CareerPickerField(
                         value = carrera,
                         onValueChange = {
@@ -185,7 +186,8 @@ fun AddActivityDialog(
                             errorMessage = null
                         },
                         label = "Carrera (o 'Todas')",
-                        isError = showErrors && carrera.isNullOrBlank()
+                        isError = showErrors && carrera.isNullOrBlank(),
+                        careersList = Careers.allowed // ← LISTA COMPLETA con "Todas"
                     )
 
                     // Horas a realizar

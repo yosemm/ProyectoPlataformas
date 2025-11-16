@@ -16,6 +16,7 @@ fun CareerPickerField(
     label: String = "Carrera",
     supportingText: String? = null,
     isError: Boolean = false,
+    careersList: List<String> = Careers.forRegistration // Por defecto usa la lista sin "Todas"
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -48,7 +49,7 @@ fun CareerPickerField(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            Careers.allowed.forEach { career ->
+            careersList.forEach { career ->
                 DropdownMenuItem(
                     text = { Text(career) },
                     onClick = {
