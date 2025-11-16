@@ -22,6 +22,12 @@ data class CreateActivityState(
     val success: Boolean = false
 )
 
+data class UpdateActivityState(
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val success: Boolean = false
+) // 👈 NUEVO
+
 class ActivitiesViewModel(
     private val repository: ActivitiesRepository,
     private val auth: FirebaseAuth
@@ -32,6 +38,10 @@ class ActivitiesViewModel(
 
     private val _createActivityState = MutableStateFlow(CreateActivityState())
     val createActivityState: StateFlow<CreateActivityState> = _createActivityState.asStateFlow()
+
+    // 👇 NUEVO
+    private val _updateActivityState = MutableStateFlow(UpdateActivityState())
+    val updateActivityState: StateFlow<UpdateActivityState> = _updateActivityState.asStateFlow()
 
     private val _userRole = MutableStateFlow<UserRole>(UserRole.ESTUDIANTE)
     val userRole: StateFlow<UserRole> = _userRole.asStateFlow()
@@ -118,10 +128,52 @@ class ActivitiesViewModel(
     }
 
     /**
+     * Actualiza una actividad existente
+     */
+    fun updateActivity(
+        activityId: String,
+        titulo: String,
+        descripcion: String,
+        fecha: Timestamp,
+        cupos: Int,
+        carrera: String,
+        horasARealizar: Int
+    ) {
+        viewModelScope.launch {
+            _updateActivityState.value = UpdateActivityState(isLoading = true)
+            
+            try {
+                repository.updateActivity(
+                    activityId = activityId,
+                    titulo = titulo,
+                    descripcion = descripcion,
+                    fecha = fecha,
+                    cupos = cupos,
+                    carrera = carrera,
+                    horasARealizar = horasARealizar
+                )
+                
+                _updateActivityState.value = UpdateActivityState(success = true)
+            } catch (e: Exception) {
+                _updateActivityState.value = UpdateActivityState(
+                    error = e.message ?: "Error al actualizar actividad"
+                )
+            }
+        }
+    }
+
+    /**
      * Reinicia el estado de creación de actividad
      */
     fun resetCreateActivityState() {
         _createActivityState.value = CreateActivityState()
+    }
+
+    /**
+     * Reinicia el estado de actualización de actividad
+     */
+    fun resetUpdateActivityState() {
+        _updateActivityState.value = UpdateActivityState()
     }
 
     /**

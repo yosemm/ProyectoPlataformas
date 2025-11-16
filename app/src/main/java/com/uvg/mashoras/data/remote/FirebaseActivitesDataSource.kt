@@ -58,6 +58,30 @@ class FirebaseActivitiesDataSource(
         docRef.set(data).await()
     }
 
+    // === EDITAR ACTIVIDAD === 👈 NUEVO
+    suspend fun updateActivity(
+        activityId: String,
+        titulo: String,
+        descripcion: String,
+        fecha: Timestamp,
+        cupos: Int,
+        carrera: String,
+        horasARealizar: Int
+    ) {
+        val docRef = activitiesCollection.document(activityId)
+        
+        val updates = hashMapOf<String, Any>(
+            "titulo" to titulo,
+            "descripcion" to descripcion,
+            "fecha" to fecha,
+            "cupos" to cupos,
+            "carrera" to carrera,
+            "horasARealizar" to horasARealizar
+        )
+        
+        docRef.update(updates).await()
+    }
+
     // === INSCRIBIR / DESINSCRIBIR ===
     suspend fun enrollStudent(activityId: String, userId: String) {
         val docRef = activitiesCollection.document(activityId)

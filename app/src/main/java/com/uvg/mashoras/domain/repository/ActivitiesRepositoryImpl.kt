@@ -1,5 +1,6 @@
 package com.uvg.mashoras.data.repository
 
+import com.google.firebase.Timestamp
 import com.uvg.mashoras.data.models.Activity
 import com.uvg.mashoras.data.remote.FirebaseActivitiesDataSource
 import com.uvg.mashoras.domain.repository.ActivitiesRepository
@@ -20,6 +21,19 @@ class ActivitiesRepositoryImpl(
 
     override suspend fun createActivity(activity: Activity, creatorId: String) {
         remote.createActivity(activity, creatorId)
+    }
+
+    // 👇 NUEVO
+    override suspend fun updateActivity(
+        activityId: String,
+        titulo: String,
+        descripcion: String,
+        fecha: Timestamp,
+        cupos: Int,
+        carrera: String,
+        horasARealizar: Int
+    ) {
+        remote.updateActivity(activityId, titulo, descripcion, fecha, cupos, carrera, horasARealizar)
     }
 
     override suspend fun enrollStudent(activityId: String, userId: String) {

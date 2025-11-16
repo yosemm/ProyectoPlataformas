@@ -31,6 +31,7 @@ import com.uvg.mashoras.ui.components.AddActivityDialog
 import com.uvg.mashoras.ui.components.StudentProgressHeader
 import java.text.SimpleDateFormat
 import java.util.*
+import com.uvg.mashoras.ui.components.EditActivityDialog
 
 @Composable
 fun ActivitiesDashboard() {
@@ -55,6 +56,7 @@ fun ActivitiesDashboard() {
 
     val activitiesState by activitiesViewModel.state.collectAsState()
     val createActivityState by activitiesViewModel.createActivityState.collectAsState()
+    val updateActivityState by activitiesViewModel.updateActivityState.collectAsState()
     val profileState by profileViewModel.uiState.collectAsState()
 
     // Actualizar el rol del usuario en el ViewModel de actividades
@@ -74,6 +76,15 @@ fun ActivitiesDashboard() {
         if (createActivityState.success) {
             showAddActivityDialog = false
             activitiesViewModel.resetCreateActivityState()
+        }
+    }
+
+    // Manejar el éxito de la actualización de actividad
+    LaunchedEffect(updateActivityState.success) {
+        if (updateActivityState.success) {
+            showEditActivityDialog = false
+            selectedActivity = null
+            activitiesViewModel.resetUpdateActivityState()
         }
     }
 
@@ -168,10 +179,41 @@ fun ActivitiesDashboard() {
     }
 
     // Modal de editar actividad (reutilizamos AddActivityDialog pero con datos precargados)
+    // Modal de editar actividad
     if (showEditActivityDialog && selectedActivity != null) {
-        // TODO: Implementar EditActivityDialog similar a AddActivityDialog
-        // Por ahora cerramos el modal
-        showEditActivityDialog = false
+        EditActivityDialog(
+            activity = selectedActivity!!,
+            onDismiss = {
+                showEditActivityDialog = false
+                activitiesViewModel.resetUpdateActivityState()
+            },
+            onConfirm = { activityId, titulo, descripcion, fecha, cupos, carrera, horas ->
+                activitiesViewModel.updateActivity(
+                    activityId = activityId,
+                    titulo = titulo,
+                    descripcion = descripcion,
+                    fecha = fecha,
+                    cupos = cupos,
+                    carrera = carrera,
+                    horasARealizar = horas
+                )
+            },
+            isLoading = updateActivityState.isLoading
+        )
+
+        // Mostrar error si hay alguno
+        updateActivityState.error?.let { error ->
+            AlertDialog(
+                onDismissRequest = { activitiesViewModel.resetUpdateActivityState() },
+                title = { Text("Error") },
+                text = { Text(error) },
+                confirmButton = {
+                    Button(onClick = { activitiesViewModel.resetUpdateActivityState() }) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
     }
 }
 
