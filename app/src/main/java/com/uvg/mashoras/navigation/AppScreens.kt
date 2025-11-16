@@ -7,5 +7,5 @@ sealed class AppScreens(val route: String) {
     object AvailableActivitiesScreen : AppScreens("available_activities_screen")
     object HistoryScreen : AppScreens("history_screen")
     object ProfileScreen : AppScreens("profile_screen")
-    object SettingsScreen : AppScreens("settings_screen") // 👈 NUEVO
+    object TermsAndConditionsScreen : AppScreens("terms_and_conditions_screen") 
 }

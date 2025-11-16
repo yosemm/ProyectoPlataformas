@@ -122,7 +122,12 @@ fun WelcomeScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        TextButton(onClick = {}) {
+        // 👇 BOTÓN FUNCIONAL DE TÉRMINOS Y CONDICIONES
+        TextButton(
+            onClick = { 
+                navController.navigate(AppScreens.TermsAndConditionsScreen.route) 
+            }
+        ) {
             Text(
                 text = "Términos y condiciones de uso",
                 fontSize = 16.sp,
@@ -138,4 +143,3 @@ fun WelcomeScreen(
         )
     }
 }
-

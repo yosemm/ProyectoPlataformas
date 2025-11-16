@@ -13,6 +13,7 @@ import com.uvg.mashoras.ui.screens.HistoryScreen
 import com.uvg.mashoras.ui.screens.LoginScreen
 import com.uvg.mashoras.ui.screens.ProfileScreen
 import com.uvg.mashoras.ui.screens.RegisterScreen
+import com.uvg.mashoras.ui.screens.TermsAndConditionsScreen
 import com.uvg.mashoras.ui.screens.WelcomeScreen
 
 @Composable
@@ -65,6 +66,10 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
         }
         composable(AppScreens.ProfileScreen.route) {
             ProfileScreen(navController = navController)
+        }
+        // 👇 NUEVA RUTA
+        composable(AppScreens.TermsAndConditionsScreen.route) {
+            TermsAndConditionsScreen(navController = navController)
         }
     }
 }
