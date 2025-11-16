@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.uvg.mashoras.MasHorasApp
 import com.uvg.mashoras.data.models.Activity
 import com.uvg.mashoras.data.models.UserRole
@@ -61,10 +60,11 @@ fun HistoryScreen(
     )
 
     // ViewModel de perfil para obtener el rol y las actividades realizadas del usuario
+    // AHORA USA UserRepository para tiempo real
     val profileViewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModelFactory(
             FirebaseAuth.getInstance(),
-            FirebaseFirestore.getInstance()
+            app.container.userRepository, // ← Cambio aquí: UserRepository en lugar de Firestore
         )
     )
 
@@ -186,11 +186,10 @@ private fun HistoryContent(
             Spacer(modifier = Modifier.height(19.dp))
         }
 
-        // Header de progreso (solo estudiante, se encarga StudentProgressHeader)
-        if (userRole == UserRole.ESTUDIANTE) {
-            item {
-                StudentProgressHeader()
-            }
+        // Header de progreso usando el componente unificado StudentProgressHeader
+        // (solo se muestra si el rol es ESTUDIANTE y tiene meta > 0)
+        item {
+            StudentProgressHeader()
         }
 
         item {
@@ -219,7 +218,6 @@ private fun HistoryContent(
                             "No has finalizado ninguna actividad aún"
                         else
                             "No has completado ninguna actividad aún",
-                        // ✅ CORRECTO
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.Gray
                     )

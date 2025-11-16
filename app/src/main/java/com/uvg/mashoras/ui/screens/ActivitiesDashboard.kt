@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.uvg.mashoras.MasHorasApp
 import com.uvg.mashoras.data.models.Activity
 import com.uvg.mashoras.data.models.UserRole
@@ -47,10 +46,11 @@ fun ActivitiesDashboard() {
     )
 
     // ViewModel de perfil para obtener el rol del usuario
+    // AHORA USA UserRepository para tiempo real
     val profileViewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModelFactory(
             FirebaseAuth.getInstance(),
-            FirebaseFirestore.getInstance()
+            app.container.userRepository, // ← Cambio aquí: UserRepository en lugar de Firestore
         )
     )
 
@@ -237,12 +237,11 @@ private fun SuccessState(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Header de progreso del estudiante (solo se muestra si el rol es ESTUDIANTE)
-            if (userRole == UserRole.ESTUDIANTE) {
-                item {
-                    StudentProgressHeader()
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+            // Header de progreso usando el componente unificado StudentProgressHeader
+            // (solo se muestra si el rol es ESTUDIANTE y tiene meta > 0)
+            item {
+                StudentProgressHeader()
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             item {

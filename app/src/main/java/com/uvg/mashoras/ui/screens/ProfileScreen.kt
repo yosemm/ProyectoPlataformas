@@ -7,7 +7,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.uvg.mashoras.data.models.User
 import com.uvg.mashoras.data.models.UserRole
 import com.uvg.mashoras.presentation.profile.ProfileViewModel
@@ -54,16 +53,22 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.uvg.mashoras.navigation.AppScreens
 import com.uvg.mashoras.ui.components.ProgressSection
+import androidx.compose.ui.platform.LocalContext
+import com.uvg.mashoras.MasHorasApp
 
 @Composable
 fun ProfileScreen(
     navController: NavController,
     modifier: Modifier = Modifier,
 ) {
+    // Obtenemos el contexto y el AppContainer
+    val context = LocalContext.current
+    val app = context.applicationContext as MasHorasApp
+    
     val viewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModelFactory(
             FirebaseAuth.getInstance(),
-            FirebaseFirestore.getInstance(),
+            app.container.userRepository, // ← Ahora usa UserRepository con tiempo real
         )
     )
     val state by viewModel.uiState.collectAsState()
@@ -76,72 +81,71 @@ fun ProfileScreen(
     val progressPercentage = (progress * 100).toInt()
 
     LazyColumn(
-    modifier = modifier
-        .fillMaxSize()
-        .padding(16.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp),
-    horizontalAlignment = Alignment.CenterHorizontally
-) {
-    item { Spacer(modifier = Modifier.height(19.dp)) }
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        item { Spacer(modifier = Modifier.height(19.dp)) }
 
-    // 👇 Solo mostramos el progreso si es ESTUDIANTE y tiene meta > 0
-    if (user?.rol == UserRole.ESTUDIANTE && goalHoursRaw > 0) {
-        item {
-            ProgressSection(
-                progress = progress,
-                progressPercentage = progressPercentage,
-                currentHours = currentHours,
-                goalHours = goalHoursRaw
-            )
-        }
-    }
-
-    item {
-        Text(
-            text = "Perfil",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = colorScheme.onBackground
-        )
-    }
-
-    item {
-        ProfileCard(user = user)
-    }
-
-    if (user?.rol == UserRole.ESTUDIANTE) {
-        item {
-            GoalForm(
-                currentMeta = user.meta,
-                onSaveMeta = { meta -> viewModel.updateMeta(meta) }
-            )
-        }
-    }
-
-    item {
-        LogoutCard(
-            onLogoutClicked = {
-                FirebaseAuth.getInstance().signOut()
-                navController.navigate(AppScreens.WelcomeScreen.route) {
-                    popUpTo(navController.graph.id) { inclusive = true }
-                }
+        // 👇 Solo mostramos el progreso si es ESTUDIANTE y tiene meta > 0
+        if (user?.rol == UserRole.ESTUDIANTE && goalHoursRaw > 0) {
+            item {
+                ProgressSection(
+                    progress = progress,
+                    progressPercentage = progressPercentage,
+                    currentHours = currentHours,
+                    goalHours = goalHoursRaw
+                )
             }
-        )
-    }
+        }
 
-    if (state.error != null) {
         item {
             Text(
-                text = state.error ?: "",
-                color = Color.Red,
-                fontSize = 14.sp
+                text = "Perfil",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = colorScheme.onBackground
             )
         }
+
+        item {
+            ProfileCard(user = user)
+        }
+
+        if (user?.rol == UserRole.ESTUDIANTE) {
+            item {
+                GoalForm(
+                    currentMeta = user.meta,
+                    onSaveMeta = { meta -> viewModel.updateMeta(meta) }
+                )
+            }
+        }
+
+        item {
+            LogoutCard(
+                onLogoutClicked = {
+                    FirebaseAuth.getInstance().signOut()
+                    navController.navigate(AppScreens.WelcomeScreen.route) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        if (state.error != null) {
+            item {
+                Text(
+                    text = state.error ?: "",
+                    color = Color.Red,
+                    fontSize = 14.sp
+                )
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(32.dp)) }
     }
-
-    item { Spacer(modifier = Modifier.height(32.dp)) }
-}
-
 }
 
 @Composable
