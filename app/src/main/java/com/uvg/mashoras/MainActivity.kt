@@ -19,12 +19,17 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.uvg.mashoras.data.models.UserRole
 import com.uvg.mashoras.navigation.AppNavigation
 import com.uvg.mashoras.navigation.AppScreens
 import com.uvg.mashoras.presentation.activities.ActivityNotificationsObserver
 import com.uvg.mashoras.ui.components.BottomNavBar
 import com.uvg.mashoras.ui.theme.MasHorasTheme
 import com.uvg.mashoras.utils.NotificationHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class MainActivity : ComponentActivity() {
 
@@ -53,11 +58,6 @@ class MainActivity : ComponentActivity() {
         val firestore = FirebaseFirestore.getInstance()
         val notificationHelper = NotificationHelper(this)
 
-        // TODO: reemplaza estos valores por los que saques de tu modelo User real
-        // Ejemplo: desde UserRepository, UserPreferencesDataSource, etc.
-        val userCareer = "all"   // "Sistemas", "Industrial", etc. o "all" si quieres probar
-        val isTeacher = false    // true si el usuario es maestro
-
         notificationsObserver = ActivityNotificationsObserver(
             context = this,
             firestore = firestore,
@@ -66,11 +66,37 @@ class MainActivity : ComponentActivity() {
         )
 
         // Solo tiene sentido observar si el usuario está logueado
-        if (auth.currentUser != null) {
-            notificationsObserver.startObserving(
-                userCareer = userCareer,
-                isTeacher = isTeacher
-            )
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            // Obtener los datos del usuario desde Firestore
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val userDoc = firestore.collection("users")
+                        .document(currentUser.uid)
+                        .get()
+                        .await()
+                    
+                    if (userDoc.exists()) {
+                        val carrera = userDoc.getString("carrera") ?: "all"
+                        val rolString = userDoc.getString("rol") ?: "ESTUDIANTE"
+                        val isTeacher = rolString == UserRole.MAESTRO.name
+                        
+                        android.util.Log.d(
+                            "DEBUG_MAIN", 
+                            "Usuario cargado: carrera=$carrera, rol=$rolString, isTeacher=$isTeacher"
+                        )
+                        
+                        notificationsObserver.startObserving(
+                            userCareer = carrera,
+                            isTeacher = isTeacher
+                        )
+                    } else {
+                        android.util.Log.w("DEBUG_MAIN", "No se encontró documento de usuario en Firestore")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("DEBUG_MAIN", "Error al cargar datos de usuario", e)
+                }
+            }
         }
 
         setContent {

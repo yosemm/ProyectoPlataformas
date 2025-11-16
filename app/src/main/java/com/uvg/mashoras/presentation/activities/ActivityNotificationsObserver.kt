@@ -34,7 +34,7 @@ class ActivityNotificationsObserver(
         }
 
         val userId = currentUser.uid
-        val userCareerNorm = userCareer.lowercase()
+        val userCareerNorm = userCareer.lowercase().trim()
 
         Log.d(
             "ActivityNotif",
@@ -54,40 +54,54 @@ class ActivityNotificationsObserver(
                     if (change.type == DocumentChange.Type.ADDED) {
                         val doc = change.document
 
-                        // "career" o "carrera" (por si acaso)
-                        val docCareerRaw =
-                            doc.getString("career")
-                                ?: doc.getString("carrera")
-                                ?: "todas"
-                        val docCareer = docCareerRaw.lowercase()
-
-                        // Aceptamos:
-                        // - mismas carreras
-                        // - "todas", "todos", "all"
-                        val esParaTodos = docCareer in listOf("todas", "todos", "all")
-                        val esParaMiCarrera = docCareer == userCareerNorm
-
-                        if (!esParaTodos && !esParaMiCarrera) {
-                            continue
-                        }
-
-                        val title =
-                            doc.getString("title")
-                                ?: doc.getString("titulo")
-                                ?: "Nueva actividad"
+                        // Obtener el campo "carrera" (es el nombre correcto en Firestore)
+                        val docCareerRaw = doc.getString("carrera") ?: "todas"
+                        val docCareer = docCareerRaw.lowercase().trim()
 
                         Log.d(
                             "ActivityNotif",
-                            "Nueva actividad detectada: id=${doc.id}, titulo=$title, carrera=$docCareerRaw"
+                            "Evaluando nueva actividad: id=${doc.id}, carrera=$docCareerRaw, userCareer=$userCareer"
+                        )
+
+                        // Verificar si es para todas las carreras
+                        val esParaTodos = docCareer in listOf("todas", "todos", "all")
+                        
+                        // Verificar si es para mi carrera (ignorar case)
+                        val esParaMiCarrera = docCareer.equals(userCareerNorm, ignoreCase = true)
+
+                        // Si no es para todas Y no es para mi carrera, skip
+                        if (!esParaTodos && !esParaMiCarrera) {
+                            Log.d(
+                                "ActivityNotif",
+                                "Actividad no es para este usuario: docCarrera=$docCareer, userCarrera=$userCareerNorm"
+                            )
+                            continue
+                        }
+
+                        // Obtener el título (el campo en Firestore es "titulo")
+                        val title = doc.getString("titulo") ?: "Nueva actividad"
+
+                        Log.d(
+                            "ActivityNotif",
+                            "Nueva actividad VÁLIDA detectada: id=${doc.id}, titulo=$title, carrera=$docCareerRaw"
                         )
 
                         if (!hasNotifiedNewActivity(doc.id)) {
                             notificationHelper.showNotification(
                                 doc.id.hashCode(),
-                                "Nueva actividad",
+                                "Nueva actividad disponible 🎯",
                                 title
                             )
                             markNotifiedNewActivity(doc.id)
+                            Log.d(
+                                "ActivityNotif",
+                                "Notificación enviada para actividad: ${doc.id}"
+                            )
+                        } else {
+                            Log.d(
+                                "ActivityNotif",
+                                "Actividad ya notificada anteriormente: ${doc.id}"
+                            )
                         }
                     }
                 }
@@ -107,16 +121,17 @@ class ActivityNotificationsObserver(
                     if (change.type == DocumentChange.Type.MODIFIED) {
                         val doc = change.document
 
-                        val estado = doc.getString("estado")
                         val finalizadoBool = doc.getBoolean("finalizado") ?: false
-                        val isFinished = (estado?.lowercase() == "finalizada") || finalizadoBool
 
-                        if (!isFinished) continue
+                        if (!finalizadoBool) {
+                            Log.d(
+                                "ActivityNotif",
+                                "Actividad modificada pero no finalizada: ${doc.id}"
+                            )
+                            continue
+                        }
 
-                        val title =
-                            doc.getString("title")
-                                ?: doc.getString("titulo")
-                                ?: "Actividad finalizada"
+                        val title = doc.getString("titulo") ?: "Actividad finalizada"
 
                         Log.d(
                             "ActivityNotif",
@@ -126,10 +141,19 @@ class ActivityNotificationsObserver(
                         if (!hasNotifiedFinished(doc.id)) {
                             notificationHelper.showNotification(
                                 (doc.id + "_finished").hashCode(),
-                                "Actividad finalizada",
-                                title
+                                "¡Actividad completada! ✅",
+                                "Has completado: $title"
                             )
                             markNotifiedFinished(doc.id)
+                            Log.d(
+                                "ActivityNotif",
+                                "Notificación de finalización enviada para: ${doc.id}"
+                            )
+                        } else {
+                            Log.d(
+                                "ActivityNotif",
+                                "Actividad ya notificada como finalizada: ${doc.id}"
+                            )
                         }
                     }
                 }
