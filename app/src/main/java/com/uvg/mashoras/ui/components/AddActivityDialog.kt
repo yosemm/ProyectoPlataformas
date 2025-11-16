@@ -21,7 +21,6 @@ import androidx.compose.ui.window.DialogProperties
 import com.google.firebase.Timestamp
 import com.uvg.mashoras.ui.register.CareerPickerField
 import com.uvg.mashoras.ui.register.Careers
-import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,7 +39,7 @@ fun AddActivityDialog(
 ) {
     var titulo by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
-    var fechaText by remember { mutableStateOf("") }
+    var selectedDate by remember { mutableStateOf<Date?>(null) }
     var cuposText by remember { mutableStateOf("") }
     var carrera by remember { mutableStateOf<String?>(null) }
     var horasText by remember { mutableStateOf("") }
@@ -138,25 +137,16 @@ fun AddActivityDialog(
                         maxLines = 5
                     )
 
-                    // Fecha (formato: dd/MM/yyyy)
-                    OutlinedTextField(
-                        value = fechaText,
-                        onValueChange = {
-                            fechaText = it
+                    // Fecha - Usando DatePickerField
+                    DatePickerField(
+                        selectedDate = selectedDate,
+                        onDateSelected = { 
+                            selectedDate = it
                             errorMessage = null
                         },
-                        label = { Text("Fecha (dd/MM/yyyy)") },
-                        placeholder = { Text("Ej: 25/12/2025") },
-                        modifier = Modifier.fillMaxWidth(),
-                        isError = showErrors && (fechaText.isBlank() || !isValidDate(fechaText)),
-                        supportingText = {
-                            if (showErrors && fechaText.isBlank()) {
-                                Text("La fecha es requerida")
-                            } else if (showErrors && !isValidDate(fechaText)) {
-                                Text("Formato inválido. Use dd/MM/yyyy")
-                            }
-                        },
-                        singleLine = true
+                        label = "Fecha",
+                        isError = showErrors && selectedDate == null,
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     // Cupos
@@ -178,7 +168,7 @@ fun AddActivityDialog(
                         singleLine = true
                     )
 
-                    // Carrera - AQUÍ USAMOS LA LISTA COMPLETA (con "Todas")
+                    // Carrera - CON MODIFICADOR fillMaxWidth()
                     CareerPickerField(
                         value = carrera,
                         onValueChange = {
@@ -187,7 +177,8 @@ fun AddActivityDialog(
                         },
                         label = "Carrera (o 'Todas')",
                         isError = showErrors && carrera.isNullOrBlank(),
-                        careersList = Careers.allowed // ← LISTA COMPLETA con "Todas"
+                        careersList = Careers.allowed,
+                        modifier = Modifier.fillMaxWidth() // 👈 AGREGADO
                     )
 
                     // Horas a realizar
@@ -250,7 +241,7 @@ fun AddActivityDialog(
                             
                             if (titulo.isBlank() ||
                                 descripcion.isBlank() ||
-                                !isValidDate(fechaText) ||
+                                selectedDate == null ||
                                 cupos == null || cupos <= 0 ||
                                 carrera.isNullOrBlank() ||
                                 horas == null || horas <= 0
@@ -260,8 +251,7 @@ fun AddActivityDialog(
                             }
 
                             try {
-                                val fecha = parseDate(fechaText)
-                                val timestamp = Timestamp(fecha)
+                                val timestamp = Timestamp(selectedDate!!)
                                 onConfirm(titulo, descripcion, timestamp, cupos, carrera!!, horas)
                             } catch (e: Exception) {
                                 errorMessage = "Error al procesar la fecha: ${e.message}"
@@ -284,29 +274,4 @@ fun AddActivityDialog(
             }
         }
     }
-}
-
-/**
- * Valida si una fecha tiene el formato dd/MM/yyyy
- */
-private fun isValidDate(dateString: String): Boolean {
-    if (dateString.isBlank()) return false
-    
-    return try {
-        val format = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        format.isLenient = false
-        format.parse(dateString)
-        true
-    } catch (e: Exception) {
-        false
-    }
-}
-
-/**
- * Parsea una fecha en formato dd/MM/yyyy a Date
- */
-private fun parseDate(dateString: String): Date {
-    val format = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    format.isLenient = false
-    return format.parse(dateString) ?: throw IllegalArgumentException("Fecha inválida")
 }

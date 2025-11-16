@@ -16,19 +16,18 @@ fun CareerPickerField(
     label: String = "Carrera",
     supportingText: String? = null,
     isError: Boolean = false,
-    careersList: List<String> = Careers.forRegistration // Por defecto usa la lista sin "Todas"
+    careersList: List<String> = Careers.forRegistration, // Por defecto usa la lista sin "Todas"
+    modifier: Modifier = Modifier // 👈 AGREGADO PARÁMETRO
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { expanded = !expanded }   // toggle
+        onExpandedChange = { expanded = !expanded }
     ) {
         OutlinedTextField(
-            modifier = Modifier
+            modifier = modifier // 👈 USAR EL PARÁMETRO MODIFIER
                 .menuAnchor()
-                .fillMaxWidth(0.9f)
-                // opcional: puedes dejarlo o quitarlo
                 .clickable { expanded = true },
             value = value.orEmpty(),
             onValueChange = { /* readOnly */ },
@@ -44,7 +43,6 @@ fun CareerPickerField(
             }
         )
 
-        // IMPORTANTE: sin LazyColumn aquí
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
