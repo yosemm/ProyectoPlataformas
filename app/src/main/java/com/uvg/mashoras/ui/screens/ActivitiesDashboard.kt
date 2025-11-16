@@ -45,12 +45,11 @@ fun ActivitiesDashboard() {
         )
     )
 
-    // ViewModel de perfil para obtener el rol del usuario
-    // AHORA USA UserRepository para tiempo real
+    // ViewModel de perfil para obtener el rol y carrera del usuario
     val profileViewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModelFactory(
             FirebaseAuth.getInstance(),
-            app.container.userRepository, // ← Cambio aquí: UserRepository en lugar de Firestore
+            app.container.userRepository,
         )
     )
 
@@ -91,6 +90,7 @@ fun ActivitiesDashboard() {
             SuccessState(
                 activities = state.activities,
                 userRole = state.userRole,
+                userCareer = profileState.user?.carrera, // 👈 NUEVO: Pasar carrera del usuario
                 currentUserUid = currentUserUid,
                 onActivityClick = { activity ->
                     selectedActivity = activity
@@ -205,6 +205,7 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
 private fun SuccessState(
     activities: List<Activity>,
     userRole: UserRole,
+    userCareer: String?, // 👈 NUEVO: Carrera del usuario
     currentUserUid: String?,
     onActivityClick: (Activity) -> Unit,
     onAddActivityClick: () -> Unit
@@ -257,13 +258,23 @@ private fun SuccessState(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Filtrar actividades según el rol
-            val filteredActivities = if (userRole == UserRole.MAESTRO) {
-                // Maestros ven todas las actividades activas
-                activities.filter { !it.finalizado }
-            } else {
-                // Estudiantes ven solo actividades activas
-                activities.filter { !it.finalizado }
+            // 👇 NUEVO: Filtrar actividades según el rol y carrera del usuario
+            val filteredActivities = when (userRole) {
+                UserRole.MAESTRO -> {
+                    // Maestros ven todas las actividades activas que crearon
+                    activities.filter { !it.finalizado }
+                }
+                UserRole.ESTUDIANTE -> {
+                    // Estudiantes ven solo actividades activas que:
+                    // 1. Sean para "Todas" las carreras, O
+                    // 2. Sean para su carrera específica
+                    activities.filter { activity ->
+                        !activity.finalizado && (
+                            activity.carrera.equals("Todas", ignoreCase = true) ||
+                            activity.carrera.equals(userCareer, ignoreCase = true)
+                        )
+                    }
+                }
             }
 
             if (filteredActivities.isEmpty()) {
@@ -275,12 +286,17 @@ private fun SuccessState(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (userRole == UserRole.MAESTRO)
-                                "No hay actividades creadas.\n¡Crea la primera!"
-                            else
-                                "No hay actividades disponibles",
+                            text = when (userRole) {
+                                UserRole.MAESTRO -> "No hay actividades creadas.\n¡Crea la primera!"
+                                UserRole.ESTUDIANTE -> if (userCareer.isNullOrBlank()) {
+                                    "Configura tu carrera en el perfil\npara ver actividades disponibles"
+                                } else {
+                                    "No hay actividades disponibles\npara tu carrera en este momento"
+                                }
+                            },
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.Gray
+                            color = Color.Gray,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
                 }
