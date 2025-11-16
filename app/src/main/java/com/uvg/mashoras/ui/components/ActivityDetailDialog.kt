@@ -49,7 +49,7 @@ fun ActivityDetailDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.85f),
+                .fillMaxHeight(0.90f),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
                 containerColor = Color.White
@@ -151,7 +151,7 @@ fun ActivityDetailDialog(
                     DetailRow("Carrera", activity.carrera)
                     DetailRow("Cupos", "${activity.estudiantesInscritos.size}/${activity.cupos}")
                     
-                    if (isFull && !isEnrolled) {
+                    if (isFull && !isEnrolled && userRole == UserRole.ESTUDIANTE) {
                         Surface(
                             color = MaterialTheme.colorScheme.errorContainer,
                             shape = RoundedCornerShape(8.dp),
@@ -165,6 +165,16 @@ fun ActivityDetailDialog(
                                 modifier = Modifier.padding(12.dp)
                             )
                         }
+                    }
+
+                    // 👇 NUEVO: Lista de estudiantes inscritos (solo para maestros creadores)
+                    if (userRole == UserRole.MAESTRO && isCreator && activity.estudiantesInscritos.isNotEmpty()) {
+                        Divider()
+                        
+                        EnrolledStudentsList(
+                            studentIds = activity.estudiantesInscritos,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
 
@@ -259,6 +269,7 @@ fun ActivityDetailDialog(
                         }
                     }
                 } else {
+                    // Actividad finalizada - solo botón cerrar
                     OutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier.fillMaxWidth()
