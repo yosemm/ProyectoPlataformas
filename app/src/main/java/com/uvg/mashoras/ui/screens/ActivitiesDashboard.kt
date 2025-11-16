@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,10 +29,13 @@ import com.uvg.mashoras.presentation.profile.ProfileViewModel
 import com.uvg.mashoras.presentation.profile.ProfileViewModelFactory
 import com.uvg.mashoras.ui.components.ActivityDetailDialog
 import com.uvg.mashoras.ui.components.AddActivityDialog
+import com.uvg.mashoras.ui.components.EditActivityDialog
 import com.uvg.mashoras.ui.components.StudentProgressHeader
+import com.uvg.mashoras.ui.components.SearchAndFilterBar
+import com.uvg.mashoras.ui.components.ActivityFilter
+import com.uvg.mashoras.ui.components.ActivitySort
 import java.text.SimpleDateFormat
 import java.util.*
-import com.uvg.mashoras.ui.components.EditActivityDialog
 
 @Composable
 fun ActivitiesDashboard() {
@@ -93,15 +97,15 @@ fun ActivitiesDashboard() {
             LoadingState()
         }
         is ActivitiesUiState.Error -> {
-            ErrorState(state.message) { 
-                activitiesViewModel.refreshActivities() 
+            ErrorState(state.message) {
+                activitiesViewModel.refreshActivities()
             }
         }
         is ActivitiesUiState.Success -> {
             SuccessState(
                 activities = state.activities,
                 userRole = state.userRole,
-                userCareer = profileState.user?.carrera, // 👈 NUEVO: Pasar carrera del usuario
+                userCareer = profileState.user?.carrera,
                 currentUserUid = currentUserUid,
                 onActivityClick = { activity ->
                     selectedActivity = activity
@@ -117,7 +121,8 @@ fun ActivitiesDashboard() {
     selectedActivity?.let { activity ->
         val state = activitiesState as? ActivitiesUiState.Success
         val userRole = state?.userRole ?: UserRole.ESTUDIANTE
-        val isEnrolled = currentUserUid?.let { activity.estudiantesInscritos.contains(it) } ?: false
+        val isEnrolled =
+            currentUserUid?.let { activity.estudiantesInscritos.contains(it) } ?: false
 
         ActivityDetailDialog(
             activity = activity,
@@ -178,7 +183,6 @@ fun ActivitiesDashboard() {
         }
     }
 
-    // Modal de editar actividad (reutilizamos AddActivityDialog pero con datos precargados)
     // Modal de editar actividad
     if (showEditActivityDialog && selectedActivity != null) {
         EditActivityDialog(
@@ -236,8 +240,8 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Error: $message")
             Spacer(Modifier.height(8.dp))
-            Button(onClick = onRetry) { 
-                Text("Reintentar") 
+            Button(onClick = onRetry) {
+                Text("Reintentar")
             }
         }
     }
@@ -247,11 +251,16 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
 private fun SuccessState(
     activities: List<Activity>,
     userRole: UserRole,
-    userCareer: String?, // 👈 NUEVO: Carrera del usuario
+    userCareer: String?,
     currentUserUid: String?,
     onActivityClick: (Activity) -> Unit,
     onAddActivityClick: () -> Unit
 ) {
+    // Estado de búsqueda, filtro y orden
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var selectedFilter by rememberSaveable { mutableStateOf(ActivityFilter.ALL) }
+    var selectedSort by rememberSaveable { mutableStateOf(ActivitySort.NEWEST) }
+
     Scaffold(
         floatingActionButton = {
             // Mostrar botón de agregar solo si es maestro
@@ -280,18 +289,19 @@ private fun SuccessState(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Header de progreso usando el componente unificado StudentProgressHeader
-            // (solo se muestra si el rol es ESTUDIANTE y tiene meta > 0)
+            // Header de progreso (solo estudiantes)
             item {
-                StudentProgressHeader()
-                Spacer(modifier = Modifier.height(16.dp))
+                if (userRole == UserRole.ESTUDIANTE) {
+                    StudentProgressHeader()
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
 
             item {
                 Text(
-                    text = if (userRole == UserRole.MAESTRO) 
-                        "Gestionar Actividades" 
-                    else 
+                    text = if (userRole == UserRole.MAESTRO)
+                        "Gestionar Actividades"
+                    else
                         "Actividades Disponibles",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
@@ -300,12 +310,27 @@ private fun SuccessState(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // 👇 NUEVO: Filtrar actividades según el rol y carrera del usuario
-            val filteredActivities = when (userRole) {
+            // Barra de búsqueda y filtros
+            item {
+                SearchAndFilterBar(
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = { searchQuery = it },
+                    selectedFilter = selectedFilter,
+                    onFilterChange = { selectedFilter = it },
+                    selectedSort = selectedSort,
+                    onSortChange = { selectedSort = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // Filtrado base según rol y carrera
+            val baseActivities = when (userRole) {
                 UserRole.MAESTRO -> {
                     // Maestros ven todas las actividades activas que crearon
                     activities.filter { !it.finalizado }
                 }
+
                 UserRole.ESTUDIANTE -> {
                     // Estudiantes ven solo actividades activas que:
                     // 1. Sean para "Todas" las carreras, O
@@ -313,13 +338,14 @@ private fun SuccessState(
                     activities.filter { activity ->
                         !activity.finalizado && (
                             activity.carrera.equals("Todas", ignoreCase = true) ||
-                            activity.carrera.equals(userCareer, ignoreCase = true)
-                        )
+                                activity.carrera.equals(userCareer, ignoreCase = true)
+                            )
                     }
                 }
             }
 
-            if (filteredActivities.isEmpty()) {
+            // Si no hay actividades base, mostramos el mensaje original
+            if (baseActivities.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -343,14 +369,95 @@ private fun SuccessState(
                     }
                 }
             } else {
-                items(filteredActivities) { activity ->
-                    ActivityCard(
-                        activity = activity,
-                        userRole = userRole,
-                        currentUserUid = currentUserUid,
-                        onClick = { onActivityClick(activity) }
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                // Funciones auxiliares
+                val isEnrolledFor: (Activity) -> Boolean = { activity ->
+                    currentUserUid?.let { uid -> activity.estudiantesInscritos.contains(uid) } ?: false
+                }
+                val isFullActivity: (Activity) -> Boolean = { activity ->
+                    activity.estudiantesInscritos.size >= activity.cupos
+                }
+
+                // 1. Buscar por texto
+                val query = searchQuery.trim().lowercase()
+                val searchedActivities = if (query.isBlank()) {
+                    baseActivities
+                } else {
+                    baseActivities.filter { activity ->
+                        activity.titulo.lowercase().contains(query) ||
+                                activity.descripcion.lowercase().contains(query)
+                    }
+                }
+
+                // 2. Filtrar por estado (disponible, inscrita, llena...)
+                val statusFilteredActivities = when (selectedFilter) {
+                    ActivityFilter.ALL -> searchedActivities
+                    ActivityFilter.AVAILABLE -> searchedActivities.filter { activity ->
+                        !activity.finalizado && !isFullActivity(activity)
+                    }
+
+                    ActivityFilter.ENROLLED -> searchedActivities.filter { activity ->
+                        isEnrolledFor(activity)
+                    }
+
+                    ActivityFilter.FULL -> searchedActivities.filter { activity ->
+                        isFullActivity(activity)
+                    }
+                }
+
+                // 3. Ordenar
+                val sortedActivities = when (selectedSort) {
+                    ActivitySort.NEWEST -> statusFilteredActivities.sortedByDescending { activity ->
+                        activity.fecha?.toDate()?.time ?: Long.MIN_VALUE
+                    }
+
+                    ActivitySort.OLDEST -> statusFilteredActivities.sortedBy { activity ->
+                        activity.fecha?.toDate()?.time ?: Long.MAX_VALUE
+                    }
+
+                    ActivitySort.MORE_HOURS -> statusFilteredActivities.sortedByDescending { activity ->
+                        activity.horasARealizar
+                    }
+
+                    ActivitySort.LESS_HOURS -> statusFilteredActivities.sortedBy { activity ->
+                        activity.horasARealizar
+                    }
+
+                    ActivitySort.MORE_SPOTS -> statusFilteredActivities.sortedByDescending { activity ->
+                        activity.cupos - activity.estudiantesInscritos.size
+                    }
+
+                    ActivitySort.LESS_SPOTS -> statusFilteredActivities.sortedBy { activity ->
+                        activity.cupos - activity.estudiantesInscritos.size
+                    }
+                }
+
+                if (sortedActivities.isEmpty()) {
+                    // Hay actividades base, pero ninguna coincide con búsqueda/filtros
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No se encontraron actividades\ncon la búsqueda o filtros actuales",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.Gray,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    items(sortedActivities) { activity ->
+                        ActivityCard(
+                            activity = activity,
+                            userRole = userRole,
+                            currentUserUid = currentUserUid,
+                            onClick = { onActivityClick(activity) }
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
                 }
             }
 
@@ -394,7 +501,7 @@ private fun ActivityCard(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-                
+
                 if (activity.finalizado) {
                     Surface(
                         color = MaterialTheme.colorScheme.primary,
@@ -461,7 +568,7 @@ private fun ActivityCard(
                         value = "${activity.horasARealizar}h"
                     )
                 }
-                
+
                 Column {
                     InfoChip(
                         label = "Cupos",
