@@ -17,9 +17,17 @@ import com.uvg.mashoras.ui.screens.WelcomeScreen
 
 @Composable
 fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifier) {
+    // Verificar si hay un usuario autenticado
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val startDestination = if (currentUser != null) {
+        AppScreens.AvailableActivitiesScreen.route
+    } else {
+        AppScreens.WelcomeScreen.route
+    }
+    
     NavHost(
         navController = navController,
-        startDestination = AppScreens.WelcomeScreen.route,
+        startDestination = startDestination,
         modifier = modifier
     ) {
         composable(AppScreens.WelcomeScreen.route) {
