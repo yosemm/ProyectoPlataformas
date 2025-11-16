@@ -40,7 +40,7 @@ fun WelcomeScreen(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(170.dp))
+        Spacer(modifier = Modifier.height(120.dp))
         Text(
             text = "¡Bienvenido!",
             fontSize = 62.sp,

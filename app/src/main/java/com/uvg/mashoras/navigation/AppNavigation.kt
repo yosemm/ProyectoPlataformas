@@ -1,5 +1,7 @@
 package com.uvg.mashoras.navigation
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -7,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.uvg.mashoras.ui.components.CenteredTopBar
 import com.uvg.mashoras.ui.register.RegisterRepository
 import com.uvg.mashoras.ui.screens.ActivitiesDashboard
 import com.uvg.mashoras.ui.screens.HistoryScreen
@@ -25,51 +28,58 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
     } else {
         AppScreens.WelcomeScreen.route
     }
-    
-    NavHost(
-        navController = navController,
-        startDestination = startDestination,
-        modifier = modifier
-    ) {
-        composable(AppScreens.WelcomeScreen.route) {
-            WelcomeScreen(navController)
+
+    Scaffold(
+        topBar = {
+            // Top bar que quieres en todas las pantallas
+            CenteredTopBar()
         }
-        composable(AppScreens.LoginScreen.route) {
-            LoginScreen(navController)
-        }
-        composable(AppScreens.RegisterScreen.route) {
-            val repository = RegisterRepository(
-                FirebaseAuth.getInstance(),
-                FirebaseFirestore.getInstance()
-            )
-            
-            RegisterScreen(
-                onRegister = { email, password, nombre, apellido, career ->
-                    repository.register(email, password, nombre, apellido, career)
-                },
-                onSuccessNavigate = {
-                    print("entra aca1")
-                    navController.navigate(AppScreens.AvailableActivitiesScreen.route) {
-                        print("entra aca2")
-                        popUpTo(AppScreens.WelcomeScreen.route) { inclusive = true }
-                        print("entra aca3")
-                    }
-                },
-                onBack = { navController.popBackStack() }
-            )
-        }
-        composable(AppScreens.AvailableActivitiesScreen.route) {
-            ActivitiesDashboard()
-        }
-        composable(AppScreens.HistoryScreen.route) {
-            HistoryScreen()
-        }
-        composable(AppScreens.ProfileScreen.route) {
-            ProfileScreen(navController = navController)
-        }
-        // 👇 NUEVA RUTA
-        composable(AppScreens.TermsAndConditionsScreen.route) {
-            TermsAndConditionsScreen(navController = navController)
+    ) { innerPadding ->
+
+        NavHost(
+            navController = navController,
+            startDestination = startDestination,
+            modifier = modifier.padding(innerPadding)
+        ) {
+            composable(AppScreens.WelcomeScreen.route) {
+                WelcomeScreen(navController)
+            }
+            composable(AppScreens.LoginScreen.route) {
+                LoginScreen(navController)
+            }
+            composable(AppScreens.RegisterScreen.route) {
+                val repository = RegisterRepository(
+                    FirebaseAuth.getInstance(),
+                    FirebaseFirestore.getInstance()
+                )
+
+                RegisterScreen(
+                    onRegister = { email, password, nombre, apellido, career ->
+                        repository.register(email, password, nombre, apellido, career)
+                    },
+                    onSuccessNavigate = {
+                        print("entra aca1")
+                        navController.navigate(AppScreens.AvailableActivitiesScreen.route) {
+                            print("entra aca2")
+                            popUpTo(AppScreens.WelcomeScreen.route) { inclusive = true }
+                            print("entra aca3")
+                        }
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(AppScreens.AvailableActivitiesScreen.route) {
+                ActivitiesDashboard()
+            }
+            composable(AppScreens.HistoryScreen.route) {
+                HistoryScreen()
+            }
+            composable(AppScreens.ProfileScreen.route) {
+                ProfileScreen(navController = navController)
+            }
+            composable(AppScreens.TermsAndConditionsScreen.route) {
+                TermsAndConditionsScreen(navController = navController)
+            }
         }
     }
 }
