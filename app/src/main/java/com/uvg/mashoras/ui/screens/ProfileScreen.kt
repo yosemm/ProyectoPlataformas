@@ -68,7 +68,7 @@ fun ProfileScreen(
     val viewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModelFactory(
             FirebaseAuth.getInstance(),
-            app.container.userRepository, // ← Ahora usa UserRepository con tiempo real
+            app.container.userRepository, // ← Usa UserRepository con tiempo real
         )
     )
     val state by viewModel.uiState.collectAsState()

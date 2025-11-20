@@ -47,6 +47,14 @@ fun RegisterScreen(
     // Para mostrar errores visuales solo después de intentar registrar
     var showErrors by remember { mutableStateOf(false) }
 
+    // Flags para saber si el usuario ya interactuó con cada campo
+    var nombreTouched by remember { mutableStateOf(false) }
+    var apellidoTouched by remember { mutableStateOf(false) }
+    var emailTouched by remember { mutableStateOf(false) }
+    var passwordTouched by remember { mutableStateOf(false) }
+    var confirmTouched by remember { mutableStateOf(false) }
+    var careerTouched by remember { mutableStateOf(false) }
+
     // Visibilidad de contraseñas
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmVisible by remember { mutableStateOf(false) }
@@ -60,6 +68,12 @@ fun RegisterScreen(
             password.length >= 6 &&
             password == confirm &&
             !career.isNullOrBlank()
+
+    // Validaciones por campo para mostrar razones cuando el botón está deshabilitado
+    val nombreValid = nombre.isNotBlank()
+    val apellidoValid = apellido.isNotBlank()
+    val emailValid = email.isNotBlank() && isUvgEmail
+    val passwordValid = password.length >= 6
 
     // Scope para lanzar corrutinas desde el botón
     val scope = rememberCoroutineScope()
@@ -77,7 +91,7 @@ fun RegisterScreen(
     ) {
         Spacer(Modifier.height(60.dp))
 
-        // Título al estilo LoginScreen
+        // Título
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth(0.9f)
@@ -105,6 +119,7 @@ fun RegisterScreen(
             onValueChange = {
                 nombre = it.trim()
                 error = null
+                nombreTouched = true
             },
             label = { Text("Nombre", color = Color.Gray) },
             modifier = Modifier.fillMaxWidth(0.9f),
@@ -114,17 +129,13 @@ fun RegisterScreen(
                 imeAction = ImeAction.Next
             ),
             singleLine = true,
-            isError = showErrors && nombre.isBlank()
+            isError = ((showErrors || nombreTouched) && !nombreValid),
+            supportingText = {
+                if ((showErrors || nombreTouched) && !nombreValid) {
+                    Text("El nombre es requerido", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                }
+            }
         )
-
-        if (showErrors && nombre.isBlank()) {
-            Text(
-                text = "El nombre es requerido",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier.fillMaxWidth(0.9f).padding(start = 16.dp, top = 4.dp)
-            )
-        }
 
         Spacer(Modifier.height(16.dp))
 
@@ -134,6 +145,7 @@ fun RegisterScreen(
             onValueChange = {
                 apellido = it.trim()
                 error = null
+                apellidoTouched = true
             },
             label = { Text("Apellido", color = Color.Gray) },
             modifier = Modifier.fillMaxWidth(0.9f),
@@ -143,17 +155,13 @@ fun RegisterScreen(
                 imeAction = ImeAction.Next
             ),
             singleLine = true,
-            isError = showErrors && apellido.isBlank()
+            isError = ((showErrors || apellidoTouched) && !apellidoValid),
+            supportingText = {
+                if ((showErrors || apellidoTouched) && !apellidoValid) {
+                    Text("El apellido es requerido", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                }
+            }
         )
-
-        if (showErrors && apellido.isBlank()) {
-            Text(
-                text = "El apellido es requerido",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier.fillMaxWidth(0.9f).padding(start = 16.dp, top = 4.dp)
-            )
-        }
 
         Spacer(Modifier.height(16.dp))
 
@@ -163,6 +171,7 @@ fun RegisterScreen(
             onValueChange = {
                 email = it.trim()
                 error = null
+                emailTouched = true
             },
             label = { Text("Correo institucional", color = Color.Gray) },
             modifier = Modifier.fillMaxWidth(0.9f),
@@ -172,31 +181,19 @@ fun RegisterScreen(
                 imeAction = ImeAction.Next
             ),
             singleLine = true,
-            isError = showErrors && (email.isNotBlank() && !isUvgEmail),
+            isError = ((showErrors || emailTouched) && !emailValid),
             supportingText = {
-                if (email.isNotBlank() && isUvgEmail) {
-                    val rol = if (EmailValidator.isStudentEmail(email)) {
-                        "Estudiante"
-                    } else {
-                        "Maestro"
+                when {
+                    email.isNotBlank() && isUvgEmail -> {
+                        val rol = if (EmailValidator.isStudentEmail(email)) "Estudiante" else "Maestro"
+                        Text(text = "Registrándose como: $rol", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
                     }
-                    Text(
-                        text = "Registrándose como: $rol",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 12.sp
-                    )
+                    (showErrors || emailTouched) && email.isBlank() -> Text("El correo institucional es requerido", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                    (showErrors || emailTouched) && email.isNotBlank() && !isUvgEmail -> Text("Debe ser un correo institucional @uvg.edu.gt", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                    else -> Spacer(Modifier.height(0.dp))
                 }
             }
         )
-
-        if (showErrors && email.isNotBlank() && !isUvgEmail) {
-            Text(
-                text = "Debe ser un correo institucional @uvg.edu.gt",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier.fillMaxWidth(0.9f).padding(start = 16.dp, top = 4.dp)
-            )
-        }
 
         Spacer(Modifier.height(16.dp))
 
@@ -206,14 +203,14 @@ fun RegisterScreen(
             onValueChange = {
                 password = it
                 error = null
+                passwordTouched = true
             },
             label = { Text("Contraseña", color = Color.Gray) },
             modifier = Modifier.fillMaxWidth(0.9f),
             shape = RoundedCornerShape(8.dp),
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
-                val icon =
-                    if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                val icon = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(icon, contentDescription = null, tint = Color.Gray)
                 }
@@ -223,9 +220,9 @@ fun RegisterScreen(
                 imeAction = ImeAction.Next
             ),
             singleLine = true,
-            isError = showErrors && password.length < 6,
+            isError = ((showErrors || passwordTouched) && !passwordValid),
             supportingText = {
-                if (showErrors && password.length < 6 && password.isNotEmpty()) {
+                if ((showErrors || passwordTouched) && password.length < 6 && password.isNotEmpty()) {
                     Text(
                         text = "Mínimo 6 caracteres",
                         color = MaterialTheme.colorScheme.error,
@@ -243,14 +240,14 @@ fun RegisterScreen(
             onValueChange = {
                 confirm = it
                 error = null
+                confirmTouched = true
             },
             label = { Text("Confirmar contraseña", color = Color.Gray) },
             modifier = Modifier.fillMaxWidth(0.9f),
             shape = RoundedCornerShape(8.dp),
             visualTransformation = if (confirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
-                val icon =
-                    if (confirmVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                val icon = if (confirmVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
                 IconButton(onClick = { confirmVisible = !confirmVisible }) {
                     Icon(icon, contentDescription = null, tint = Color.Gray)
                 }
@@ -260,10 +257,10 @@ fun RegisterScreen(
                 imeAction = ImeAction.Done
             ),
             singleLine = true,
-            isError = showErrors && confirm.isNotEmpty() && confirm != password
+            isError = ((showErrors || confirmTouched) && confirm.isNotEmpty() && confirm != password)
         )
 
-        if (showErrors && confirm.isNotEmpty() && confirm != password) {
+        if ((showErrors || confirmTouched) && confirm.isNotBlank() && confirm != password) {
             Text(
                 text = "Las contraseñas no coinciden",
                 color = MaterialTheme.colorScheme.error,
@@ -280,26 +277,31 @@ fun RegisterScreen(
             onValueChange = {
                 career = it
                 error = null
+                careerTouched = true
             },
-            isError = showErrors && career.isNullOrBlank()
+            modifier = Modifier.fillMaxWidth(0.9f),
+            isError = ((showErrors || careerTouched) && career.isNullOrBlank())
         )
+
+        if ((showErrors || careerTouched) && career.isNullOrBlank()) {
+            Text(
+                text = "Seleccione una carrera",
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier.fillMaxWidth(0.9f).padding(start = 16.dp, top = 4.dp)
+            )
+        }
 
         Spacer(Modifier.height(16.dp))
 
         // Mensaje de error (registro)
         if (error != null) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(0.9f),
-                color = MaterialTheme.colorScheme.errorContainer,
-                shape = RoundedCornerShape(8.dp)
-            ) {
                 Text(
                     text = error!!,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(12.dp)
                 )
-            }
             Spacer(Modifier.height(8.dp))
         }
 
@@ -324,7 +326,7 @@ fun RegisterScreen(
                             },
                             onFailure = {
                                 it.printStackTrace()
-                                error = it.localizedMessage ?: it.message ?: "Error desconocido"
+                                error = translateErrorToSpanish(it)
                             }
                         )
                     }
@@ -367,5 +369,37 @@ fun RegisterScreen(
         }
         
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+private fun translateErrorToSpanish(throwable: Throwable): String {
+    val raw = throwable.localizedMessage ?: throwable.message ?: ""
+    if (raw.isBlank()) return "Error al registrar"
+
+    val afterDash = raw.substringAfterLast(" - ", raw)
+    val afterColon = afterDash.substringAfterLast(":", afterDash)
+    val cleaned = afterColon.trim()
+    val lower = cleaned.lowercase()
+
+    return when {
+        // Mensajes posibles de Firebase / Auth
+        "email already in use" in lower || "already in use" in lower || "el correo ya" in lower -> "Este correo electrónico ya está en uso."
+        "weak-password" in lower || "weak password" in lower || "weakpassword" in lower || "débil" in lower -> "La contraseña es muy débil."
+        "invalid email" in lower || "invalid-email" in lower || "invalid email" in cleaned.lowercase() || "address is badly formatted" in lower || "badly formatted" in lower -> "El correo electrónico es inválido."
+        "missing-email" in lower || "missing email" in lower || "email is required" in lower -> "El correo electrónico es obligatorio."
+        "user-not-found" in lower || "user not found" in lower || "no user" in lower -> "No se encontró ningún usuario con este correo electrónico."
+        "wrong-password" in lower || "wrong password" in lower || "incorrect password" in lower -> "La contraseña es incorrecta."
+        "network" in lower || "failed to connect" in lower || "unable to resolve" in lower -> "Error de red. Verifique su conexión e intente nuevamente."
+        "timeout" in lower || "timed out" in lower -> "Tiempo de espera agotado. Intente de nuevo."
+        "unauthorized" in lower || "403" in lower -> "Acceso no autorizado."
+        "401" in lower -> "No autorizado. Verifique sus credenciales."
+        "auth/invalid-email" in lower -> "El correo electrónico es inválido."
+        "auth/email-already-in-use" in lower || "auth/email-already-in-use" in lower -> "Este correo electrónico ya está en uso."
+        "auth/wrong-password" in lower -> "La contraseña es incorrecta."
+        "auth/user-not-found" in lower -> "No se encontró ningún usuario con este correo electrónico."
+        else -> {
+            // Fallback
+            "Error al registrar $cleaned"
+        }
     }
 }
